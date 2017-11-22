@@ -1,0 +1,9 @@
+---
+- name: Hello World
+  hosts: localhost
+  user: ubuntu
+  sudo: yes
+
+  tasks:
+    - name: Hello World
+      shell: echo "Hello World" > hello.txt

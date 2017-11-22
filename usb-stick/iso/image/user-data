@@ -1,0 +1,86 @@
+#cloud-config
+
+cloud_init_modules:
+ - migrator
+ - seed_random
+ - bootcmd
+ - growpart
+ - resizefs
+ - set_hostname
+ - update_hostname
+ - update_etc_hosts
+ - ca-certs
+ - rsyslog
+ - users-groups
+ - ssh
+
+cloud_config_modules:
+ - emit_upstart
+ - disk_setup
+ - mounts
+ - ssh-import-id
+ - locale
+ - set-passwords
+ - grub-dpkg
+ - apt-pipelining
+ - apt-configure
+ - package-update-upgrade-install
+ - landscape
+ - timezone
+ - puppet
+ - chef
+ - salt-minion
+ - mcollective
+ - disable-ec2-metadata
+ - runcmd
+ - byobu
+ - write-files
+
+cloud_final_modules:
+ - rightscale_userdata
+ - scripts-vendor
+ - scripts-per-once
+ - scripts-per-boot
+ - scripts-per-instance
+ - scripts-user
+ - ssh-authkey-fingerprints
+ - keys-to-console
+ - phone-home
+ - final-message
+ - power-state-change
+
+ssh_pwauth: yes
+
+chpasswd:
+  expire: false 
+  list: |
+    root:ubuntu
+    ubuntu:ubuntu
+
+write_files:
+  - owner: ubuntu:ubuntu
+    path: /home/ubuntu/setup.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+
+      # Mount cloud-init cdrom
+      mkdir /tmp/cdrom
+      sudo mount /dev/cdrom /tmp/cdrom
+
+      # Copy .deb packages from cdrom     
+      mkdir ~/packages
+      cp -r /tmp/cdrom/packages ~/
+
+      # Install .deb dependencies
+      cd packages
+      chmod a+x install.sh
+      ./install.sh
+      cd ~
+
+      # Copy Ansible files
+      mkdir ~/ansible
+      cp -r /tmp/cdrom/ansible  ~/
+
+      # TODO: Run Ansible
+      
