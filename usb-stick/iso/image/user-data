@@ -52,7 +52,7 @@ cloud_final_modules:
 ssh_pwauth: yes
 
 chpasswd:
-  expire: false 
+  expire: false
   list: |
     root:ubuntu
     ubuntu:ubuntu
@@ -65,22 +65,22 @@ write_files:
       #!/bin/bash
 
       # Mount cloud-init cdrom
-      mkdir /tmp/cdrom
-      sudo mount /dev/cdrom /tmp/cdrom
+      mkdir -vp /tmp/cdrom
+      sudo mount -o ro /dev/cdrom /tmp/cdrom
 
-      # Copy .deb packages from cdrom     
-      mkdir ~/packages
-      cp -r /tmp/cdrom/packages ~/
+      # install Ansible package and dependencies
+      sudo -E apt-get update
+      sudo -E apt-get -y install python-pip socat ntp libxslt1-dev libffi-dev libfuse-dev bridge-utils \
+        openssl iptables-persistent makedumpfile openjade sgmlspl libssl-dev libpcap-dev \
+        liblua5.2-dev libncurses5-dev libedit-dev libncursesw5-dev jq sshpass \
+        build-essential wget tmux git python-dev vim-tiny software-properties-common
+      sudo -E apt-add-repository -y ppa:ansible/ansible
+      sudo -E apt-get update
+      sudo -E apt-get -y install ansible
 
-      # Install .deb dependencies
-      cd packages
-      chmod a+x install.sh
-      ./install.sh
-      cd ~
+      # Clone demo repository
+      git clone https://github.com/intel/container-experience-kits-demo-area.git demo
 
-      # Copy Ansible files
-      mkdir ~/ansible
-      cp -r /tmp/cdrom/ansible  ~/
-
-      # TODO: Run Ansible
-      
+      # go to ansible scripts directory
+      cd demo/software/
+      exec bash
