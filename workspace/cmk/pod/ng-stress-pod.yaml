@@ -1,0 +1,13 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: cpupodstress
+spec:
+  tolerations:
+  - operator: "Exists"
+  containers:
+  - name: cpucpucontainer1
+    image: stress-ng
+    imagePullPolicy: "IfNotPresent" 
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "stress-ng --matrix 0 --matrix-size 512" ]
