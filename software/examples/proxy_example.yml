@@ -3,10 +3,11 @@
 # Some default parameters shown for reference
 
 # For proxy environments
-# During ansible execution provide and extra_vars file with proxy configured
+# !!!! NOTE ansible does not support https:// for https_proxy, only http://
+# During ansible execution provide an extra_vars file with proxy configured
 # Use socks as needed
-# no_proxy localhost is all that's needed, during deployment
-# no_proxy will be populated by ansible.
+# Minimally localhost is needed in no_proxy. During deployment, no_proxy will
+# be appended to with hostname and IP address of system
 
 proxy_env:
   http_proxy: http://proxy.example.com:8080
