@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
-cmk_version: "v1.2.0"
 cmk_dir: "/opt/cmk"
 cmk_repo: "{{ git_repos['CMK_REPO'] }}"
 cmk_branch: "{{ git_repos['CMK_BRANCH'] }}"
