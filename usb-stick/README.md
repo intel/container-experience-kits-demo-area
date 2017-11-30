@@ -1,7 +1,7 @@
 # Introduction
 
 USB stick contains:
-* `intel-kubecon.iso` disk image serving as a cloud-init configuration drive and source of the software and its dependencies installed for the workshop purposes.
+* `intel-kubecon.iso` disk image serving as a cloud-init configuration drive.
 * Unmodified Ubuntu Server 16.04 LTS (Xenial Xerus) Cloud Image in Open Virtual Aliance (OVA) format obtained from https://cloud-images.ubuntu.com/xenial/current/.
 * Scripts for automated VirtualBox VM setup: `setup_vm.bat` for Windows and `setup_vm.sh` for Linux distributions respectively.
 
@@ -10,6 +10,7 @@ USB stick contains:
 ## Setting up VM
 
 ### Automated
+
 1. Run `setup_vm.bat` on Windows or `setup_vm.sh` on Linux distributions and wait until the operation completes.
 ![Automated setup](pictures/files.jpg)
 2. Open VirtualBox and start `kubecon_intel` virtual machine.
@@ -31,4 +32,16 @@ USB stick contains:
 8. Start the VM. Press Enter key and login with **ubuntu/ubuntu** credentials.
 
 ## Installing software
-1. Execute `setup.sh` script located in the **ubuntu** user home directory. Script will install required .deb packages and will run the Ansible playbooks to setup all software components. *Note: Internet connection is **not** required.*
+1. (Optionally) Set proxy environment variables if needed:
+```
+export http_proxy=http://<server>:<port>
+export https_proxy=https://<server>:<port>
+```
+2. Execute `setup.sh` script located in the **ubuntu** user home directory. Script will install install required packages and will clone GitHub repository with Ansible playbook to setup Kubernetes and other software components.
+3. Run ansible-playbook commands to install Kubernetes and other software components following [this guide](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#installation).
+
+## Troubleshooting
+
+**Error: VT-x is not available (VERR_VMX_NO_VMX) in VirtualBox.**
+
+The **VT-x** or **Virtualization acceleration** (the name depends on the motherboard and may vary) option is disabled for the CPU in the local machine's BIOS and this is required since guest OS is 64-bit version of Ubuntu. Common workaround would be to enable the **VT-x** option in the local machine BIOS and restart the computer.
