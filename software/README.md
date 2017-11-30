@@ -47,5 +47,6 @@ Misc
       **note:** kube-dns can take a while to go into running state but if needed, delete the pod and kubernets will recreate it
 
       ``kubectl delete -n kube-system pods {name of pod}``
+      
       ``kubectl delete -n kube-system pods kube-dns-545bc4bfd4-jh2xb``
 
