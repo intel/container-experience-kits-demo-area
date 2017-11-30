@@ -1,17 +1,17 @@
 Preparing Kubernetes bare-metal nodes using Ansible
-============================================
+===================================================
 
 Ansible is a configuration management utility. 
 Instructions in this readme have been tested with Ansible version 2.3.2.
 
 Deploying Kubernetes without Proxy
---------------------
+----------------------------------
    1. Execute ansible-playbook
 
       ``ansible-playbook -i inventory.ini allinone.yml``
 
 Deploying Kubernetes with Proxy
---------------------
+-------------------------------
    1. Under ``examples/`` there are two proxy files that can be utilized.
 
       1a. ``examples/proxy_example.yml`` extra_vars file which ansible will consume during deployment
@@ -31,8 +31,19 @@ Deploying Kubernetes with Proxy
 
          ``source proxy.env && ansible-playbook -i inventory.ini -e @proxy.yml allinone.yml``
 
+Running Node Feature Discovery and CPU Manager for Kubernetes
+-------------------------------------------------------------
+   1. Running Node Feature Discovery (NFD)
+
+      ``ansible-playbook -i inventory.ini k8s_run_nfd.yml``
+
+   2. Running CPU Manager for Kubernetes (CMK)
+
+      ``ansible-playbook -i inventory.ini k8s_run_cmk.yml``
+
+
 Misc
----
+----
 
    1. If missing, set **kubeconfig** environment variable
 
