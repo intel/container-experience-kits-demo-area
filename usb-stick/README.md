@@ -40,6 +40,25 @@ export https_proxy=https://<server>:<port>
 2. Execute `setup.sh` script located in the **ubuntu** user home directory. Script will install install required packages and will clone GitHub repository with Ansible playbook to setup Kubernetes and other software components.
 3. Run ansible-playbook commands to install Kubernetes and other software components following [this guide](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#installation).
 
+## Generating USB stick content
+
+1. Run
+```
+make
+```
+in the `usb-stick` directory. This will:
+* download the latest version of Ubuntu Server 16.04 LTS (Xenial Xerus) Cloud Image in OVA format from [here](https://cloud-images.ubuntu.com/xenial/current/).
+* build `intel-kubecon.iso` cloud-init image
+* copy scripts for automated VM import from `usb-stick/scripts` directory
+
+2. All output files will be placed in the `usb-stick/build` directory. Additionally, .tar archive containing .ova image, scripts and cloud-init ISO will be created in the usb-stick directory.
+
+3. To download and install VirtualBox platform go to [official download page](https://www.virtualbox.org/wiki/Downloads).
+
+**Note**: To build cloud-init ISO only go to `usb-stick/iso` directory and run `make` command.
+
+**Note**: `genisoimage` tool is required to generate `intel-kubecon.iso` image.
+
 ## Troubleshooting
 
 **Error: VT-x is not available (VERR_VMX_NO_VMX) in VirtualBox.**
