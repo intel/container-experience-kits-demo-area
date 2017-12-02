@@ -1,13 +1,11 @@
-FROM centos:7
-
+FROM ubuntu
+ 
 #ENV http_proxy
-#ENV https_proxy 
-
+#ENV https_proxy
+ 
+RUN apt update && apt install -y stress-ng
+ 
 ENV SHELL=/bin/bash
+ 
+ENTRYPOINT ["/usr/bin/stress-ng"] 
 
-RUN \
-  rpm --rebuilddb && yum clean all && \
-  yum install -y epel-release && \
-  yum install -y stress-ng
-  
-ENTRYPOINT ["/usr/bin/stress-ng"]
