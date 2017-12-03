@@ -1,6 +1,6 @@
 ---
 git_repos:
-  MULTUS_CNI_BRANCH: 2ae1c3d58d6c115d5e67df54efc0addeb46405da
+  MULTUS_CNI_BRANCH: b2d67c8909b940ebf8eae5e87a4ac8897e3ef9d3
   MULTUS_CNI_REPO: http://github.com/Intel-Corp/multus-cni
   CMK_BRANCH: 945b10c5039a4cabdf91a90957afe1e5bc65a4b2
   CMK_REPO: http://github.com/Intel-Corp/CPU-Manager-for-Kubernetes
