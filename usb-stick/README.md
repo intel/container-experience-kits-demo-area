@@ -13,9 +13,18 @@ USB stick contains:
 
 1. Run `setup_vm.bat` on Windows or `setup_vm.sh` on Linux distributions and wait until the operation completes.
 ![Automated setup](pictures/files.jpg)
+
+*1a. Optionally you can also configure port forwarding to enable access to the VM via SSH. Open VirtualBox and go to `kubecon_intel` virutal machine **Network** tab.*
+![Automated setup](../docs/images/SSH-network.JPG)
+![Automated setup](../docs/images/SSH-network-rule.JPG)
+
 2. Open VirtualBox and start `kubecon_intel` virtual machine.
 ![Automated setup](pictures/imported.jpg)
+
 3. Press Enter key and login with **ubuntu/ubuntu** credentials.
+
+*3a. Optinally you can work in the putty*
+![Automated setup](../docs/images/putty-ssh.jpg)
 
 ### Manual
 1. Open VirtualBox Manager. Select **File** -> **Import Appliance...**. Specify path to the `xenial-server-cloudimg-amd64.ova` file. Click **Next** and **Import**.
@@ -30,6 +39,7 @@ USB stick contains:
 ![Manual setup](pictures/serial.jpg)
 7. Save  changes by clicking **OK** button.
 8. Start the VM. Press Enter key and login with **ubuntu/ubuntu** credentials.
+
 
 ## Installing software
 1. (Optionally) Set proxy environment variables if needed:
