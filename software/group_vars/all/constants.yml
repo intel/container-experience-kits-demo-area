@@ -30,6 +30,7 @@ connection_timeout: 600
 kube_config_dir: "/tmp/k8sconfig"
 kube_apply: "kubectl apply -f"
 kube_create: "kubectl create -f"
+kube_delete: "kubectl delete -f"
 kubeconfig: "/etc/kubernetes/admin.conf"
 k8s_cni_bin: "/opt/cni/bin"
 k8s_cni_conf: "/etc/cni/net.d"

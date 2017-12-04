@@ -6,9 +6,9 @@ Instructions in this readme have been tested with Ansible version 2.3.2.
 
 Deploying Kubernetes without Proxy
 ----------------------------------
-   1. Execute ansible-playbook
+   1. Execute ansible-playbook: (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
 
-      ``ansible-playbook -i inventory.ini allinone.yml``
+      ``$ sudo ansible-playbook -b -i inventory.ini allinone.yml``
 
 Deploying Kubernetes with Proxy
 -------------------------------
@@ -21,25 +21,37 @@ Deploying Kubernetes with Proxy
         - copy to ansible directory as ``proxy_env`` and modify accordingly
           - ``no_proxy`` will be auto-populated with local sytem IP address
 
-   2.  Execute ansible-playbook either:
+   2.  Execute ansible-playbook either: (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
 
        2a. With proxy already configured in environment
 
-         ``ansible-playbook -i inventory.ini -e @proxy.yml allinone.yml``
+         ``$ sudo ansible-playbook -b -i inventory.ini -e @proxy.yml allinone.yml``
 
        2b. Sourcing *proxy.env* file
 
-         ``source proxy.env && ansible-playbook -i inventory.ini -e @proxy.yml allinone.yml``
+         ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml allinone.yml``
 
 Running Node Feature Discovery and CPU Manager for Kubernetes
 -------------------------------------------------------------
-   1. Running Node Feature Discovery (NFD)
+   1. Running Node Feature Discovery (NFD): (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
 
-      ``ansible-playbook -i inventory.ini k8s_run_nfd.yml``
+      1a. As shown in example above, without proxy:
 
-   2. Running CPU Manager for Kubernetes (CMK)
+      ``$ sudo ansible-playbook -b -i inventory.ini run_nfd.yml``
 
-      ``ansible-playbook -i inventory.ini k8s_run_cmk.yml``
+      1b. As shown in example above, with proxy
+
+      ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml run_nfd.yml``
+
+   2. Running CPU Manager for Kubernetes (CMK): (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
+
+      2a. As shown in example above, without proxy:
+
+      ``$ sudo ansible-playbook -b -i inventory.ini run_cmk.yml``
+
+      2b. As shown in example above, with proxy:
+
+      ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml run_cmk.yml``
 
 
 Misc
@@ -47,17 +59,22 @@ Misc
 
    1. If missing, set **kubeconfig** environment variable
 
-      ``export KUBECONFIG=/etc/kubernetes/admin.conf``
+      ``$ export KUBECONFIG=/etc/kubernetes/admin.conf``
 
    2. Kubernetes status
 
-      ``kubectl get pods --all-namespaces -o wide``
+      ``$ sudo kubectl get pods --all-namespaces -o wide``
 
    3. Kubernetes pod stuck in ContainerCreating
 
-      **note:** kube-dns can take a while to go into running state but if needed, delete the pod and kubernets will recreate it
+      **note:** kube-dns can take a while to go into running state but if needed, delete the pod and kubernetes will recreate it
 
-      ``kubectl delete -n kube-system pods {name of pod}``
+      ``$ sudo kubectl delete -n kube-system pods {name of pod}``
       
-      ``kubectl delete -n kube-system pods kube-dns-545bc4bfd4-jh2xb``
+      ``$ sudo kubectl delete -n kube-system pods kube-dns-545bc4bfd4-jh2xb``
 
+   4. Clean up NFD and CMK pods
+
+      ``$ ansible-playbook -b -i inventory.ini clean_cmk.yml``
+
+      ``$ ansible-playbook -b -i inventory.ini clean_nfd.yml``
