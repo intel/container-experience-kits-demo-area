@@ -32,34 +32,37 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-  - name: Create nfd dir
-    file: "path={{ nfd_dir }} state=directory"
+  - name: Create cmk dir
+    file: "path={{ cmk_dir }} state=directory"
 
-  - name: Clone nfd
+  - name: Clone cmk
     async: "{{ connection_timeout }}"
     poll: 10
     git:
-      repo: "{{ nfd_repo }}"
-      dest: "{{ nfd_dir }}"
-      version: "{{ nfd_branch }}"
+      repo: "{{ cmk_repo }}"
+      dest: "{{ cmk_dir }}"
+      version: "{{ cmk_branch }}"
       accept_hostkey: yes
       recursive: no
       force: yes
 
-  - name: Bring in shortened Makefile
-    template:
-      dest: "{{ nfd_dir }}/Makefile"
-      src: short_makefile
+  - name: Login to quay.io
+    command: "docker login -u='{{ docker_username }}' -p='{{ docker_password }}' {{ docker_repo_base }}"
 
-  - name: Configure proxy in Docker build (if applicable)
-    template:
-      dest: "{{ nfd_dir }}/Makefile"
-      src: proxy_makefile
-    when: '"http_proxy" in calc_proxy_env or "https_proxy" in calc_proxy_env'
+  - name: pull cmk image
+    command: "docker pull {{ docker_repo_name }}/cmk:v1.2.1"
 
-  - name: Build nfd image
-    make:
-      chdir: "{{ nfd_dir }}"
-      params:
-        VERSION: v0.1.0
-        DOCKER_IMAGE_NAME: nfd
+  - name: logout quay.io
+    command: "docker logout quay.io"
+
+  - name: get image tag
+    shell: "docker images | awk '/cmk/ {print$3}'"
+    register: docker_cmk_id
+
+  - debug: var=docker_cmk_id.stdout_lines[0]
+
+  - name: tag image
+    command: "docker tag {{ docker_cmk_id.stdout_lines[0] }} cmk:v1.2.1"
+
+  - name: remove original downloaded tag
+    command: "docker rmi {{ docker_repo_name }}/cmk:v1.2.1"

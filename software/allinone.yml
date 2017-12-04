@@ -46,8 +46,6 @@
     - docker
     - install_k8s
     - build_multus
-    - build_nfd
-    - build_cmk
     - kubeadm_init
     - kubeadm_post
     - k8s_plugins
