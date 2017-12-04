@@ -13,17 +13,13 @@ USB stick contains:
 
 1. Run `setup_vm.bat` on Windows or `setup_vm.sh` on Linux distributions and wait until the operation completes.
 ![Automated setup](pictures/files.jpg)
-
-*1a. Optionally you can also configure port forwarding to enable access to the VM via SSH. Open VirtualBox and go to `kubecon_intel` virutal machine **Network** tab.*
+2. *Optionally you can also configure port forwarding to enable access to the VM via SSH. Open VirtualBox and go to `kubecon_intel` virutal machine **Network** tab.*
 ![Automated setup](../docs/images/SSH-network.JPG)
 ![Automated setup](../docs/images/SSH-network-rule.JPG)
-
-2. Open VirtualBox and start `kubecon_intel` virtual machine.
+3. Open VirtualBox and start `kubecon_intel` virtual machine.
 ![Automated setup](pictures/imported.jpg)
-
-3. Press Enter key and login with **ubuntu/ubuntu** credentials.
-
-*3a. Optinally you can work in the putty*
+4. Press Enter key and login with **ubuntu/ubuntu** credentials.
+5. *Optinally you can work in the putty*
 ![Automated setup](../docs/images/putty-ssh.jpg)
 
 ### Manual
