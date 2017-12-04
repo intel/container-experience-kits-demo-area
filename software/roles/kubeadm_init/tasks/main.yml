@@ -35,6 +35,10 @@
       state: directory
       mode: 0755
 
+  - name: disable swap
+    command: swapoff -a
+    ignore_errors: true
+
   - name: reset Kubernetes cluster
     command: kubeadm reset
 
