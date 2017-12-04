@@ -53,7 +53,7 @@ Please fill in the feedback [google-form](www.example.com)!
 * Project github pages
     * [Multus](https://github.com/Intel-Corp/multus-cni)
     * [SRIOV - DPDK CNI](https://github.com/Intel-Corp/sriov-cni)
-    * [Vhostuser - VPP & OVD - DPDK CNI](https://github.com/intel/vhost-user-net-plugin)
+    * [Vhostuser - VPP & OVS - DPDK CNI](https://github.com/intel/vhost-user-net-plugin)
     * [Node Feature Discovery](https://github.com/kubernetes-incubator/node-feature-discovery)
     * [CPU Manager for Kubernetes](https://github.com/Intel-Corp/CPU-Manager-for-Kubernetes)
 
