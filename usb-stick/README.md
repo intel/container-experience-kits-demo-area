@@ -1,9 +1,22 @@
+Table of Contents
+=================
+
+   * [Introduction](#introduction)
+   * [Installation](#installation)
+      * [Setting up VM](#setting-up-vm)
+         * [Automated](#automated)
+         * [Manual](#manual)
+   * [Installing software](#installing-software)
+   * [Don't have USB stick?](#generating-usb-stick-content)
+   * [Troubleshooting](#troubleshooting)
+
 # Introduction
 
 USB stick contains:
 * `intel-kubecon.iso` disk image serving as a cloud-init configuration drive.
 * Unmodified Ubuntu Server 16.04 LTS (Xenial Xerus) Cloud Image in Open Virtual Aliance (OVA) format obtained from https://cloud-images.ubuntu.com/xenial/current/.
 * Scripts for automated VirtualBox VM setup: `setup_vm.bat` for Windows and `setup_vm.sh` for Linux distributions respectively.
+* **Make sure Virutal box is installed in your laptop, if not install the Virutal box as `VirtualBox-5.2.2-119230-Win.exe` is avaiable in USB stick**
 
 # Installation
 
@@ -59,7 +72,7 @@ in the `usb-stick` directory. This will:
 
 2. All output files will be placed in the `usb-stick/build` directory. Additionally, .tar archive containing .ova image, scripts and cloud-init ISO will be created in the usb-stick directory.
 
-3. To download and install VirtualBox platform go to [official download page](https://www.virtualbox.org/wiki/Downloads).
+3. To download and install VirtualBox platform go to [official download page](https://www.virtualbox.org/wiki/Downloads), follow up [installation](#installation).
 
 **Note**: To build cloud-init ISO only go to `usb-stick/iso` directory and run `make` command.
 
