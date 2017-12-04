@@ -60,7 +60,7 @@ Developer's interested in manual installation for NFD, please refer the section 
   "node.alpha.kubernetes-incubator.io/node-feature-discovery.version": "v0.1.0"
 }
 ```
-2. Node affinity was introduced as alpha in Kubernetes 1.2. Node affinity is conceptually similar to nodeSelector � it allows you to constrain which nodes your pod is eligible to schedule on, based on labels on the node. Based on the NFD node labels `node.alpha.kubernetes-incubator.io/nfd-cpuid-AVX` schedule the pod. Since it is a single node, simple AVX feature is used for the example. The `with-node-affinity` should be scheduled in the single node
+2. Node affinity was introduced as alpha in Kubernetes 1.2. Node affinity is conceptually similar to nodeSelector – it allows you to constrain which nodes your pod is eligible to schedule on, based on labels on the node. Based on the NFD node labels `node.alpha.kubernetes-incubator.io/nfd-cpuid-AVX` schedule the pod. Since it is a single node, simple AVX feature is used for the example. The `with-node-affinity` pod should be scheduled in the single node
 ```
 # cd ~/demo/workspace/nfd/
 # sudo kubectl create -f ./nfd-affinity.yaml
@@ -68,7 +68,7 @@ Developer's interested in manual installation for NFD, please refer the section 
 NAME                 READY     STATUS    RESTARTS   AGE
 with-node-affinity   1/1       Running   0          1m
 ```
-3. There is no explicit �node anti-affinity� concept, but `NotIn` and `DoesNotExist` give that behavior. Use the same NFD node label `node.alpha.kubernetes-incubator.io/nfd-cpuid-AVX` and operator `DoesNotExist` to achieve the node anti-affinity. Pod should end up in the pending state with message `No nodes are available that match all of the predicates: MatchNodeSelector (1)`
+3. There is no explicit “node anti-affinity” concept, but `NotIn` and `DoesNotExist` give that behavior. Use the same NFD node label `node.alpha.kubernetes-incubator.io/nfd-cpuid-AVX` and operator `DoesNotExist` to achieve the node anti-affinity. Pod should end up in the pending state with message `No nodes are available that match all of the predicates: MatchNodeSelector (1)`
 ```
 # sudo kubectl get pods --show-all
 NAME                           READY     STATUS      RESTARTS   AGE
@@ -110,20 +110,52 @@ Events:
 
 ### Manual Installation (not the part of the demo)
 1.	The steps involved in installing NFD by cloning the following GitHub link: 
-
+```
 https://github.com/kubernetes-incubator/node-feature-discovery
-
+```
 2.	Next, the directory should be changed to node-feature-discovery followed by running the make command to build the docker image which is subsequently used in the file node-feature-discovery-job.json.template:
+```
 # cd <project-root>
 make
+```
 3.	Obtain the name of the image built in the previous step using:
+```
 # docker images 
-
+```
 4.	Push NFD image to the Docker Registry. In the commands below <docker registry> is the docker registry used in the Kubernetes cluster:
+```
 #docker tag <image name> <docker registry>/<image name> 
 #docker push <docker registry>/<image name> 
-
+```
 5.	Edit the node-feature-discovery-job.json.template to change image node. To use the built image from the step above, run the following command:
+```
 ...
 "image": "<docker registry>/<image name>"..
+```
+6. With the set up done, NFD can now be run. Currently, NFD is deployed as a Kubernetes job and can be deployed using the script label-nodes.sh, which can be obtained from the aforementioned NFD GitHub repo. This script identifies the number of nodes in the Kubernetes cluster and creates the “node-feature discovery-job.json” file.  This file contains the Kubernetes job configuration and replaces placeholder variables from the template file with the number of discovered nodes. 
+7.	Running this script automatically creates a “node-feature-discovery” job.
+ ```
+ # ./label-nodes.sh
+  ```
+The “node-feature-discovery” job runs pods on each node, and discovers the hardware capabilities of the node it is running on and assigns the proper labels to the node. 
+8.	For verifying the correct execution of NFD, the labels assigned to the nodes can be viewed using the following command:
+```
+# kubectl get nodes -o json | jq .items[].metadata.labels
+```
+Example output of this command for single node looks like this:
+```
+{
+  "node.alpha.kubernetes-incubator.io/node-feature-discovery.version": "a9af7ff-dirty",
+  "node.alpha.kubernetes-incubator.io/nfd-pstate-turbo": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-network-SRIOV": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-SSSE3": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-SSE4.2": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-SSE4.1": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-SSE3": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-ERMS": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-F16C": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-HTT": "true",
+  "node.alpha.kubernetes-incubator.io/nfd-cpuid-MMX": "true",
+  }
+```
 
