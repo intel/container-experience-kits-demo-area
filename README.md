@@ -17,9 +17,9 @@ Table of Contents
 =================
 
    * [USB Stick content details](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#introduction)
-      * [Set-up on single script](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#installation)
-   * [Lab pre-requisites](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#introduction)
-      * [Own installation Setup](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#installation)
+      * [VM Set-up](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#automated)
+   * [Demo installation](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#introduction)
+      * [All in one script](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#installation)
    * [NFV Features in Kubernetes](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#introduction)
       * [Baremetal container model](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#baremetal-container-model)
       * [Node features Discovery](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#node-feature-discovery)
@@ -30,7 +30,32 @@ Table of Contents
    * [Container Exp kits details](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/exp-kits/README.md#introduction)
    * [Contacts](#contacts)
 
-please fill in the feedback [google-form](www.example.com)  & questions
+## <a name="help"></a>Need assistance
+
+If you have any questions about, feedback on Intel's container exp kit:
+
+- Read [Containers Experience Kits - will be updated soon](https://networkbuilders.intel.com/network-technologies/container-experience-kits).
+- Invite yourself to the <a href="https://intel-corp.herokuapp.com/" target="_blank"> #intel-dnsg-slack</a> slack channel.
+- Ask a question on the <a href="https://intel-corp-team.slack.com/messages/C4C5RSEER"> #general-discussion</a> slack channel.
+- Need more assistant<a href="mailto:kuralamudhan.ramakrishnan@intel.com"> email us</a>
+- Feel free to <a href="https://github.com/intel/container-experience-kits-demo-area/issues/new">file an issue.</a>
+
+Please fill in the feedback [google-form](www.example.com)!
+
+## Further Information
+
+* Feature brief
+    * [Multiple Network Interface Support in Kubernetes ](https://builders.intel.com/docs/networkbuilders/multiple-network-interfaces-support-in-kubernetes-feature-brief.pdf)
+    * [Enhanced Platform Awareness in Kubernetes](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-feature-brief.pdf)
+* Application note
+    * [Multiple Network Interfaces in Kubernetes and Container Bare Metal ](https://builders.intel.com/docs/networkbuilders)
+    * [Enhanced Platform Awareness Features in Kubernetes ](https://builders.intel.com/docs/networkbuilders)
+* Project github pages
+    * [Multus](https://github.com/Intel-Corp/multus-cni)
+    * [SRIOV - DPDK CNI](https://github.com/Intel-Corp/sriov-cni)
+    * [Vhostuser - VPP & OVD - DPDK CNI](https://github.com/intel/vhost-user-net-plugin)
+    * [Node Feature Discovery](https://github.com/kubernetes-incubator/node-feature-discovery)
+    * [CPU Manager for Kubernetes](https://github.com/Intel-Corp/CPU-Manager-for-Kubernetes)
 
 ## Contacts
 For any questions, please reach out on github issue or feel free to contact @ivan and @kural in our [Intel-Corp Slack](https://intel-corp.herokuapp.com/)
