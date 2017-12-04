@@ -40,7 +40,7 @@ If you have any questions about, feedback on Intel's container exp kit:
 - Need more assistant<a href="mailto:kuralamudhan.ramakrishnan@intel.com"> email us</a>
 - Feel free to <a href="https://github.com/intel/container-experience-kits-demo-area/issues/new">file an issue.</a>
 
-Please fill in the feedback [google-form](www.example.com)!
+Please fill in the Questions/feedback -  [google-form](https://goo.gl/forms/iMAvaq8wDY33azlh1)!
 
 ## Further Information
 
