@@ -22,21 +22,25 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-#### These are implementation constants
-#### DO NOT MODIFY
+  - name: delete nfd pod 
+    command: "{{ kube_delete }} /opt/nfd/node-feature-discovery-job.json"
+    environment:
+      KUBECONFIG: "{{ kubeconfig }}"
+    ignore_errors: true
 
-connection_timeout: 600
-kube_config_dir: "/tmp/k8sconfig"
-kube_apply: "kubectl apply -f"
-kube_create: "kubectl create -f"
-kube_delete: "kubectl delete -f"
-kubeconfig: "/etc/kubernetes/admin.conf"
-k8s_cni_bin: "/opt/cni/bin"
-k8s_cni_conf: "/etc/cni/net.d"
-
-docker_repo_base: quay.io
-docker_repo_name: "{{ docker_repo_base }}/charliekang"
-docker_username: charliekang+ces_demo
-docker_password: 8KW71204WMF84G2JPVT50PSR2WJM26U9SZGYQOCRQ097LNSWOIBFKDD15BAQWOVB
+  - name: delete nfd rbac and service account
+    command: "{{ kube_delete }} {{ kube_config_dir }}/nfd_service.yaml"
+    environment:
+      KUBECONFIG: "{{ kubeconfig }}"
+    ignore_errors: true
 

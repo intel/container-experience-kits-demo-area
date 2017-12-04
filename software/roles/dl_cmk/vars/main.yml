@@ -2,6 +2,10 @@
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
+# Copyright (c) 2016-2017, Intel Corporation.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
@@ -22,21 +26,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 ---
-#### These are implementation constants
-#### DO NOT MODIFY
-
-connection_timeout: 600
-kube_config_dir: "/tmp/k8sconfig"
-kube_apply: "kubectl apply -f"
-kube_create: "kubectl create -f"
-kube_delete: "kubectl delete -f"
-kubeconfig: "/etc/kubernetes/admin.conf"
-k8s_cni_bin: "/opt/cni/bin"
-k8s_cni_conf: "/etc/cni/net.d"
-
-docker_repo_base: quay.io
-docker_repo_name: "{{ docker_repo_base }}/charliekang"
-docker_username: charliekang+ces_demo
-docker_password: 8KW71204WMF84G2JPVT50PSR2WJM26U9SZGYQOCRQ097LNSWOIBFKDD15BAQWOVB
-
+cmk_dir: "/opt/cmk"
+cmk_repo: "{{ git_repos['CMK_REPO'] }}"
+cmk_branch: "{{ git_repos['CMK_BRANCH'] }}"

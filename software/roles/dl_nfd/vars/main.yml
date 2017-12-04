@@ -2,6 +2,10 @@
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
+# Copyright (c) 2016-2017, Intel Corporation.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
 #     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
@@ -24,7 +28,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
-- hosts: allinone
-  any_errors_fatal: true
-  roles:
-    - run_nfd
+nfd_version: "v0.1.0"
+nfd_dir: "/opt/nfd"
+nfd_repo: "{{ git_repos['NFD_REPO'] }}"
+nfd_branch: "{{ git_repos['NFD_BRANCH'] }}"
