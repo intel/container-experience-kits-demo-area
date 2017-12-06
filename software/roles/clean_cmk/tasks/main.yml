@@ -34,6 +34,8 @@
 ---
   - name: get cmk daemonset
     shell: "kubectl get ds | awk '/cmk/ {print$1}'"
+    args:
+      executable: /bin/bash
     register: cmk_daemonset
 
   - debug: var=cmk_daemonset.stdout_lines[0]
@@ -78,3 +80,7 @@
   - name: remove cmk-uninstall pod
     command: "{{ kube_delete }} /opt/cmk/resources/pods/cmk-uninstall-pod.yaml"
 
+  - name: remove cmk taints
+    shell: "kubectl taint nodes --all cmk-"
+    args:
+      executable: /bin/bash

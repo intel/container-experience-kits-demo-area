@@ -32,37 +32,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-  - name: Create nfd dir
-    file: "path={{ nfd_dir }} state=directory"
-
-  - name: Clone nfd
-    async: "{{ connection_timeout }}"
-    poll: 10
-    git:
-      repo: "{{ nfd_repo }}"
-      dest: "{{ nfd_dir }}"
-      version: "{{ nfd_branch }}"
-      accept_hostkey: yes
-      recursive: no
-      force: yes
-
-  - command: "docker login -u='{{ docker_username }}' -p='{{ docker_password }}' {{ docker_repo_base }}"
-
-  - name: pull nfd image
-    command: "docker pull {{ docker_repo_name }}/nfd:v0.1.0"
-
-  - command: "docker logout quay.io"
-
-  - name: get image tag
-    shell: "docker images | awk '/nfd/ {print$3}'"
+  - name: get docker image
+    shell: "docker images | awk '/{{ IMAGE_NAME }}/ {print$3}'"
     args:
       executable: /bin/bash
-    register: docker_nfd_id
+    register: clean_image
 
-  - debug: var=docker_nfd_id.stdout_lines[0]
+  - debug: var=clean_image.stdout_lines[0]
 
-  - name: tag image
-    command: "docker tag {{ docker_nfd_id.stdout_lines[0] }} nfd:v0.1.0"
+  - name: remove docker image
+    command: "docker rmi -f {{ clean_image.stdout_lines[0] }}"
 
-  - name: remove original downloaded tag
-    command: "docker rmi {{ docker_repo_name }}/nfd:v0.1.0"

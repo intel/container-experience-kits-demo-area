@@ -55,6 +55,8 @@
 
   - name: get image tag
     shell: "docker images | awk '/cmk/ {print$3}'"
+    args:
+      executable: /bin/bash
     register: docker_cmk_id
 
   - debug: var=docker_cmk_id.stdout_lines[0]

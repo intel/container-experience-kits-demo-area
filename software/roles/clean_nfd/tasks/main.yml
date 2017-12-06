@@ -44,3 +44,15 @@
       KUBECONFIG: "{{ kubeconfig }}"
     ignore_errors: true
 
+  - name: get labels
+    shell: "kubectl get nodes -o json | jq .items[].metadata.labels | awk '/incubator/ {sub(\":\", \"\", $1); print$1}'"
+    args:
+      executable: /bin/bash
+    register: nfd_labels
+
+  - debug: var=nfd_labels.stdout_lines
+
+  - name: remove labels
+    command: "kubectl label nodes --all {{ item }}-"
+    with_items: "{{ nfd_labels.stdout_lines }}"
+

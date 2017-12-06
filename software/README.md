@@ -33,25 +33,29 @@ Deploying Kubernetes with Proxy
 
 Running Node Feature Discovery and CPU Manager for Kubernetes
 -------------------------------------------------------------
-   1. Running Node Feature Discovery (NFD): (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
+   1. Building and Running without Proxy: 
 
-      1a. As shown in example above, without proxy:
+      (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
 
-      ``$ sudo ansible-playbook -b -i inventory.ini run_nfd.yml``
+      1a. To build NFD and CMK images, run the respective playbooks accordingly:
 
-      1b. As shown in example above, with proxy
+      ``$ sudo ansible-playbook -b -i inventory.ini build_{nfd|cmk}.yml``
 
-      ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml run_nfd.yml``
+      1b. Running respective NFD and CMK:
 
-   2. Running CPU Manager for Kubernetes (CMK): (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
+      ``$ sudo ansible-playbook -b -i inventory.ini run_{nfd|cmk}.yml``
 
-      2a. As shown in example above, without proxy:
+   2. Building and Running with Proxy
 
-      ``$ sudo ansible-playbook -b -i inventory.ini run_cmk.yml``
+      (IMPORTANT: Use ``-b`` switch to allow ansble to ``become user root``)
 
-      2b. As shown in example above, with proxy:
+      2a. To build NFD and CMK images, run the respective playbooks accordingly:
 
-      ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml run_cmk.yml``
+      ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml build_{nfd|cmk}.yml``
+
+      2b. Running respective NFD and CMK:
+
+      ``$ source proxy.env && sudo -E ansible-playbook -b -i inventory.ini -e @proxy.yml run_{nfd|cmk}.yml``
 
 
 Misc
@@ -78,3 +82,9 @@ Misc
       ``$ ansible-playbook -b -i inventory.ini clean_cmk.yml``
 
       ``$ ansible-playbook -b -i inventory.ini clean_nfd.yml``
+
+   4. Clean NFD and CMK images and pods
+
+      ``$ ansible-playbook -b -i inventory.ini cleanall_cmk.yml``
+
+      ``$ ansible-playbook -b -i inventory.ini cleanall_nfd.yml``

@@ -23,46 +23,15 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---
-  - name: Create nfd dir
-    file: "path={{ nfd_dir }} state=directory"
-
-  - name: Clone nfd
-    async: "{{ connection_timeout }}"
-    poll: 10
-    git:
-      repo: "{{ nfd_repo }}"
-      dest: "{{ nfd_dir }}"
-      version: "{{ nfd_branch }}"
-      accept_hostkey: yes
-      recursive: no
-      force: yes
-
-  - command: "docker login -u='{{ docker_username }}' -p='{{ docker_password }}' {{ docker_repo_base }}"
-
-  - name: pull nfd image
-    command: "docker pull {{ docker_repo_name }}/nfd:v0.1.0"
-
-  - command: "docker logout quay.io"
-
-  - name: get image tag
-    shell: "docker images | awk '/nfd/ {print$3}'"
-    args:
-      executable: /bin/bash
-    register: docker_nfd_id
-
-  - debug: var=docker_nfd_id.stdout_lines[0]
-
-  - name: tag image
-    command: "docker tag {{ docker_nfd_id.stdout_lines[0] }} nfd:v0.1.0"
-
-  - name: remove original downloaded tag
-    command: "docker rmi {{ docker_repo_name }}/nfd:v0.1.0"
+- hosts: allinone
+  any_errors_fatal: true
+  pre_tasks:
+    - set_fact:
+        default_ip: "{{ ansible_default_ipv4['address'] }}"
+    - set_fact:
+        calc_proxy_env: "{{ proxy_env|calculate_no_proxy }}"
+    - group_by: key={{ ansible_os_family }}
+  roles:
+    # Can download image if not building the image
+    - dl_nfd 

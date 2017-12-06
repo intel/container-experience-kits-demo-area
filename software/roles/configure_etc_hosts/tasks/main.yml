@@ -51,5 +51,7 @@
 
   - name: add hosts_to_add to /etc/hosts
     shell: cat /etc/hosts_to_add >> /etc/hosts
+    args:
+      executable: /bin/bash
 
 
