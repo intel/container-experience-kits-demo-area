@@ -33,7 +33,4 @@
         calc_proxy_env: "{{ proxy_env|calculate_no_proxy }}"
     - group_by: key={{ ansible_os_family }}
   roles:
-    # commenting out due to possible slow internet
-    #- build_cmk
-    - dl_cmk
     - run_cmk
