@@ -167,6 +167,13 @@ spec:
 root     12258  0.0  1.7 192072 36312 ?        S    Dec03   0:00 /opt/bin/cmk isolate --conf-dir=/etc/cmk --pool=dataplane stress-ng --matrix 0 --matrix-size 512
 ```
 
+## Troubleshooting
+
+1. To clean the taint, please run the following command.
+```
+sudo kubectl taint nodes --all cmk-
+```
+
 ### Manual Installation (not the part of the demo)
 1.	Installing CMK starts with cloning the following Intel GitHub link:
 ```
