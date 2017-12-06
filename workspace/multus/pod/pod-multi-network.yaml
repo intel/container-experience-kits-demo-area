@@ -8,6 +8,8 @@ metadata:
         { "name": "ptp-conf"}
     ]'
 spec:  # specification of the pod's contents
+  tolerations:
+  - operator: "Exists"
   containers:
   - name: multus-multi-net-poc
     image: "busybox"
