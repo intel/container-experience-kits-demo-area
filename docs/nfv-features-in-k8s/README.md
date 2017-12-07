@@ -53,7 +53,7 @@ More information on DPDK can be found on the DPDK website: http://dpdk.org.
 
 Kubernetes natively supports only a single network interface, however it's possible to implement multiple network interfaces using Multus. With Multus, other CNI plugins can create network connections. Multus is a CNI proxy and arbiter of other CNI plugins. It invokes other CNI plugins for network interface creation. When Multus is used, a master plugin (flannel, Calico, weave) is identified to manage the primary network interface (eno2) for the pod and it is returned to Kubernetes. Other CNI minion plugins (SR-IOV, vHost CNI, etc.) can create additional pod interfaces (net0, net1, etc.) during their normal instantiation process. 
 
-More information can be found in Application Note #3
+More information can be found in Application Note - [Multiple Network Interfaces in Kubernetes](https://builders.intel.com/docs/networkbuilders/multiple-network-interfaces-in-kubernetes-application-note.pdf)
 
 Source code for MULTUS-CNI: https://github.com/Intel-Corp/multus-cni. 
 
@@ -61,7 +61,7 @@ Source code for MULTUS-CNI: https://github.com/Intel-Corp/multus-cni.
 
 SR-IOV introduces the concept of virtual functions (VFs) that represent a regular PCIe physical function (PF) to a VNF.   In Kubernetes, SR-IOV is implemented by utilizing an SR-IOV CNI plugin that lets the pod attach directly to the VF. Now, multiple containers within a Kubernetes pod can each have access to their own Ethernet VF. Each VFs can be treated as a separate physical NIC and configured with separate MAC, VLAN and IP, etc. That VF gets mapped to a specific physical Ethernet port. Additional capabilities with SRIOV allows binding the VF to DPDK bound driver i.e vfio_pci when a pod is instantiated. As a result, performance is vastly improved as packets move directly between the NIC and the pod.
 
-More information can be found in Application Note #3
+More information can be found in Application Note - [Multiple Network Interfaces in Kubernetes](https://builders.intel.com/docs/networkbuilders/multiple-network-interfaces-in-kubernetes-application-note.pdf)
 
 Source code for SRIOV-CNI: https://github.com/Intel-Corp/sriov-cni.
 
@@ -69,13 +69,20 @@ Source code for SRIOV-CNI: https://github.com/Intel-Corp/sriov-cni.
 
 Node Feature Discovery (NFD), a project in the Kubernetes incubator, discovers and advertises hardware capabilities of a platform which are, in turn, used to facilitate intelligent scheduling of a workload. The NFD script launches a job that deploys a single pod on each node (labeled or unlabeled) in the cluster. NFD can be run on labeled nodes to detect additional features that might have been introduced at a later stage e.g. introduction of an SR-IOV capable NIC to the node. When each pod runs, it connects the Kubernetes API server to add labels to the node.
 
-More information can be found in Application Note #2
+More information can be found in Application Note - [Enhanced platform awareness in K8s](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-in-kubernetes-application-note.pdf)
 
 Source code for NFD: https://github.com/Intel-Corp/node-feature-discovery
 
 ## CMK
 
 CMK is a tool for managing core pinning and isolation in Kubernetes. CMK creates core isolation by applying CPU masks, which represent cores on which the workload can be executed. The core availability state is maintained in a host file system that incorporates a system lock to avoid any conflicts. This core state is structured as a directory hierarchy where pools are represented as directories where workloads can acquire slots. These slots represent physical allocable cores in the form of a list of their logical core IDs. These pools can be exclusive, where only one workload can run per slot, or shared. The slot directory keeps track of the processes that have acquired the slot through process IDs. When a workload has completed its task, CMK will enforce the directory system lock and remove that workload's process ID from the relevant slot in order to free the core for another workload to use. In a case when the CMK program is unable to clean up the process IDs due to being killed or terminated unexpectedly, a periodic process is run to act as garbage collection. This process removes process IDs of workloads no longer running from slots to free up cores. 
+
+More information can be found in Application Note - [Enhanced platform awareness in K8s](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-in-kubernetes-application-note.pdf)
+
+Source code for NFD: https://github.com/Intel-Corp/CPU-Manager-for-Kubernetes
+
+## CMK
+
 
 # Performance figures
 ![performance-figures](../images/PerformanceJPG.JPG)
