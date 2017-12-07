@@ -9,7 +9,7 @@ CPU Manager for Kubernetes (CMK) performs a variety of operations to enable core
 ### Demo Installation with ansible script
 1. Install CMK with ansible script ```k8s_run_cmk.yml``` in the folder [demo/software](https://github.com/intel/container-experience-kits-demo-area/blob/master/software)
 ```
-sudo ansible-playbook -i inventory.ini k8s_run_cmk.yml
+sudo ansible-playbook -b -i inventory.ini run_cmk.yml
 ```
 Developer's interested in manual installation for CMK, please refer the section [Manual Installation](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/cmk/README.md#manual-installation-not-the-part-of-the-demo)
 
