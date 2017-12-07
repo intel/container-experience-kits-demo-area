@@ -24,7 +24,7 @@ One of the key capabilities detected by NFD is SR-IOV through the network featur
 ```
 2. Install NFD with ansible script ```k8s_run_nfd.yml``` in the folder [demo/software](https://github.com/intel/container-experience-kits-demo-area/blob/master/software)
 ```
-sudo ansible-playbook -i inventory.ini k8s_run_nfd.yml
+sudo ansible-playbook -b -i inventory.ini run_nfd.yml
 ```
 Developer's interested in manual installation for NFD, please refer the section [Manual Installation](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/nfd/README.md#manual-installation-not-the-part-of-the-demo)
 
