@@ -18,7 +18,7 @@ Table of Contents
 
    * [USB Stick content details](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#introduction)
       * [VM Set-up](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#automated)
-   * [Demo Instruction](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace#demo-env-prep)
+   * [Demo Instruction](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace#demo-instruction)
    * [Ansible Script](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#introduction)
       * [All in one script](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#installation)
    * [NFV Features in Kubernetes](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#introduction)
