@@ -19,6 +19,7 @@ The intended audience of this demo is system architects, developers and engineer
 This demo kit identifies those scripts and the hardware and software needed for correct operation. The summarizes the software configuration and data flows explored in this repo[link]. MULTUS, NFD, and CMK are deployed in one node using the Ansible scripts provided in this [link]. 
 
 **Using the USB stick you can install the Kubernetes with Mutlus, NFD and CMK in your laptop**
+
 **In order to overcome the hardware limitation during the demo, we provided the SRIOV - DPDK CNI features as a video demo here**
 
 ### Bare metal container Set up details
@@ -77,3 +78,4 @@ Source code for NFD: https://github.com/Intel-Corp/node-feature-discovery
 CMK is a tool for managing core pinning and isolation in Kubernetes. CMK creates core isolation by applying CPU masks, which represent cores on which the workload can be executed. The core availability state is maintained in a host file system that incorporates a system lock to avoid any conflicts. This core state is structured as a directory hierarchy where pools are represented as directories where workloads can acquire slots. These slots represent physical allocable cores in the form of a list of their logical core IDs. These pools can be exclusive, where only one workload can run per slot, or shared. The slot directory keeps track of the processes that have acquired the slot through process IDs. When a workload has completed its task, CMK will enforce the directory system lock and remove that workload's process ID from the relevant slot in order to free the core for another workload to use. In a case when the CMK program is unable to clean up the process IDs due to being killed or terminated unexpectedly, a periodic process is run to act as garbage collection. This process removes process IDs of workloads no longer running from slots to free up cores. 
 
 # Performance figures
+![performance-figures](../images/PerformanceJPG.JPG)
