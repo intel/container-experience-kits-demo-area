@@ -10,7 +10,7 @@ Abstract details as follows:
 
 Through this hands-on lab session,  you will learn about Intel’s Container Bare Metal Experience Kits, the new capabilities introduced by Intel and Kubernetes features that will enable you to develop NFV use cases in Container-bare-metal deployments
 
-Get the presentation [slide - deck](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/slide-deck/KubeCon2017-enabling-nfv-features-in-kubernetes.pptx)
+Get the presentation [slide - deck](https://www.slideshare.net/KuralamudhanRamakris/enabling-nfv-features-in-kubernetes-83572884)
 
 
 Table of Contents
