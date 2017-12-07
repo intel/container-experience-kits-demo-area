@@ -166,6 +166,8 @@ spec:
 # ps aux | grep 12258
 root     12258  0.0  1.7 192072 36312 ?        S    Dec03   0:00 /opt/bin/cmk isolate --conf-dir=/etc/cmk --pool=dataplane stress-ng --matrix 0 --matrix-size 512
 ```
+4. Clean up CMK installation in K8s Cluster
+``$ ansible-playbook -b -i inventory.ini clean_cmk.yml``
 
 ## Troubleshooting
 
