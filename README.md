@@ -49,8 +49,8 @@ Please fill in the Questions/feedback -  [google-form](https://goo.gl/forms/iMAv
     * [Multiple Network Interface Support in Kubernetes ](https://builders.intel.com/docs/networkbuilders/multiple-network-interfaces-support-in-kubernetes-feature-brief.pdf)
     * [Enhanced Platform Awareness in Kubernetes](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-feature-brief.pdf)
 * Application note
-    * [Multiple Network Interfaces in Kubernetes and Container Bare Metal ](https://builders.intel.com/docs/networkbuilders)
-    * [Enhanced Platform Awareness Features in Kubernetes ](https://builders.intel.com/docs/networkbuilders)
+    * [Multiple Network Interfaces in Kubernetes and Container Bare Metal ](https://builders.intel.com/docs/networkbuilders/multiple-network-interfaces-in-kubernetes-application-note.pdf)
+    * [Enhanced Platform Awareness Features in Kubernetes ](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-in-kubernetes-application-note.pdf)
 * Project github pages
     * [Multus](https://github.com/Intel-Corp/multus-cni)
     * [SRIOV - DPDK CNI](https://github.com/Intel-Corp/sriov-cni)
