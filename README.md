@@ -2,7 +2,7 @@
 
 This tutorial will be a demo for a number of technologies for enabling NFV features in Kubernetes. 
 
-For all requirements for the hands-on session checks the pre-requisites folder. The audience will be provided with a USB stick with all open source software installation in a single script. Please check with the lab co-ordinators during the session to get the USB stick. Else, please follow the instruction in the pre-requisites and download the required software on your own and prepare all of the prerequisites. Co-ordinators will help you with the software installation.
+For all requirements for the hands-on session checks the table of contents below. The audience will be provided with a USB stick with all open source software installation in a single script. Please check with the lab co-ordinators during the session to get the USB stick. Else, please follow the instruction in the [generating the USB stick contents](https://github.com/intel/container-experience-kits-demo-area/tree/master/usb-stick#generating-usb-stick-content) and download the required software on your own and prepare all of the prerequisites. Co-ordinators will help you with the software installation.
 
 Abstract details as follows:
 
