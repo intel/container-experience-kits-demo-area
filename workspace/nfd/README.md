@@ -107,6 +107,8 @@ Events:
   ----     ------            ----               ----               -------
   Warning  FailedScheduling  13s (x6 over 28s)  default-scheduler  No nodes are available that match all of the predicates: MatchNodeSelector (1).
 ```
+4. Clean up NFD and CMK pods
+``$ ansible-playbook -b -i inventory.ini clean_nfd.yml``
 
 ### Manual Installation (not the part of the demo)
 1.	The steps involved in installing NFD by cloning the following GitHub link: 
