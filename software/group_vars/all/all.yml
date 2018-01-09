@@ -5,6 +5,10 @@
 # supported versions 1.6.x,1.7.x,1.8.x
 kubernetes_version: "1.8.4"
 
+# supported versions 0.5.1, 0.6.0
+# kubernetes <=1.8.4 will require 0.5.1
+kubernetes_cni_version: "0.5.1"
+
 # CMK - CPU Manager for Kubernetes
 #   cmk_img = image to use
 #   num_dp_cores = number of dataplane cores (4)
