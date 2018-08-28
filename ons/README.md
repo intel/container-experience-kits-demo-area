@@ -276,6 +276,14 @@ export CNI_PATH=/opt/cni/bin; \
   ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
 ```
 
+Now get the IPs for each of the containers you have running in open windows, you can do so with:
+
+```
+vppctl show interface addr
+```
+
+Get them for both containers, and then ping one from another. Note that we're using `vppctl ping ...` because we're in userspace -- we can't just use plain old `ping`.
+
 Now let's see if we can get a ping between them:
 
 ```
