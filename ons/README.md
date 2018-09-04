@@ -292,6 +292,8 @@ vppctl ping 192.168.210.2
 
 ## SR-IOV Device Plugin
 
+Emulated with [virt-network-device-plugin](https://github.com/zshi-redhat/virt-network-device-plugin#quick-start).
+
 ### Core Concepts
 
 ```
@@ -300,9 +302,145 @@ vppctl ping 192.168.210.2
 
 ### Tutorial
 
+Let's first create the CRD object for this, similarly to Multus.
+
+Move into the local clone...
+
 ```
-[ stub ]
+cd ~/virt-network-device-plugin/
 ```
+
+Create the CRD object.
+
+```
+kubectl create -f deployments/virt-crd.yaml
+```
+
+You can list it and describe it.
+
+```
+kubectl get network-attachment-definitions.k8s.cni.cncf.io
+kubectl describe network-attachment-definitions.k8s.cni.cncf.io virt-net1
+```
+
+Let's make it so we can run workloads on the master, here's where we'll run the virt-device-plugin itself.
+
+```
+kubectl taint node kube-master-1 node-role.kubernetes.io/master:NoSchedule-
+kubectl label nodes kube-master-1 dedicated=master
+```
+
+Now let's spin up the device plugin itself...
+
+```
+cat <<EOF | kubectl create -f -
+kind: Pod
+apiVersion: v1
+metadata:
+        name: virt-device-plugin
+spec:
+  nodeSelector:
+    dedicated: master
+  tolerations:
+    - key: node-role.kubernetes.io/master
+      operator: Equal
+      value: master
+      effect: NoSchedule
+  containers:
+  - name: virt-device-plugin
+    image: virt-device-plugin
+    imagePullPolicy: IfNotPresent
+    command: [ "/usr/bin/virtdp", "-logtostderr", "-v", "10" ]
+    # command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 300000; done;" ]
+    #securityContext:
+        #privileged: true
+    volumeMounts:
+    - mountPath: /var/lib/kubelet/device-plugins/
+      name: devicesock
+      readOnly: false
+    - mountPath: /sys/class/net
+      name: net
+      readOnly: true
+  volumes:
+  - name: devicesock
+    hostPath:
+     # directory location on host
+     path: /var/lib/kubelet/device-plugins/
+  - name: net
+    hostPath:
+      path: /sys/class/net
+  hostNetwork: true
+  hostPID: true
+EOF
+```
+
+Check out the logs of that pod...
+
+```
+kubectl logs virt-device-plugin
+```
+
+Look near the bottom of the logs for a line that reads `ListAndWatch` -- you'll see it picked up on two devices for us. Those devices will match what we see in `/sys/class/net`
+
+
+```
+ls -lathr /sys/class/net/
+```
+
+Ok, now let's spin up a pod...
+
+```
+cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod1
+  labels:
+    env: test
+  annotations:
+    k8s.v1.cni.cncf.io/networks: virt-net1
+spec:
+  containers:
+  - name: appcntr1
+    image: dougbtv/centos-network
+    imagePullPolicy: IfNotPresent
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 300000; done;" ]
+    resources:
+      requests:
+        memory: "128Mi"
+        kernel.org/virt: '1'
+      limits:
+        memory: "128Mi"
+        kernel.org/virt: '1'
+EOF
+```
+
+Now let's describe that pod and see if there's anything wrong with it...
+
+```
+kubectl describe pod testpod1
+```
+
+If there's something wrong with it in the logs... Delete and recreate.
+
+```
+kubectl delete pod testpod1
+```
+
+Sometimes we have an issue here (it is alpha software after all) where it allocates the already used device on the system.
+
+And then use the above pod create again.
+
+Now we can exec in the pod and see it run!
+
+```
+kubectl exec -it testpod1 -- ip a
+```
+
+You'll see two interfaces. `eth0` and `net1` -- where `net1` is the virtual device.
+
 
 ## Additional & Reference Materials
 
