@@ -4,28 +4,51 @@ Thanks for joining us at ONS Europe 2018 to try out some NFV features in Kuberne
 
 Agenda:
 
-* Introduction to technologies
 * Workstation setup
 * Multus CNI
 * Userspace CNI
 * SR-IOV Device Plugin (emulated)
 * Additional & Reference Materials
 
-## Introduction to technologies
+## Requirements
 
-```
-[slide deck]
-```
+All you need is an SSH client. Please feel free to use whatever you have. If you'd like, you can use a [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en).
 
 ## Workstation setup
 
-(Instructions on how to connect to the server)
+Let's get setup to use our workstation! At each of your desks, you'll have a number. The speakers will provide you with a link to visit. Visit that link.
+
+Here you'll be presented with a table with a number, use the SSH connection string as provided and you'll wind up on the machine. Do you notice that there's 2 SSH links? One is a backup in case you type `exit` -- generally, don't type `exit`! If you do by accident (or, more likely, out of habit), you can use the second one. 
+
+First things first! Let's make a new window.
+
+```
+tmux new
+```
+
+This provides us a layer of redundancy in case someone types `exit`.
+
+Now! Let's make sure that no one else is accidentally using our instance! We'll use the `wall` command to announce our name.
+
+```
+wall Hello this is My Name
+```
+
+Make sure to type your own name. If you see someone else's name appear -- let's figure out who used the wrong link.
+
+Now! Let's make sure you can access the kubernetes cluster, let's list the available nodes...
+
+```
+kubectl get nodes
+```
+
+You should see the master and a node, and the `STATUS` should read `NotReady` -- this is where we want it, these nodes won't be ready until we install our pod-to-pod network. That's what's we're going to do next, let's roll!
 
 ## Multus CNI
 
 ### Core Concepts
 
-* CRDs
+* CRDs - Custom Resource Definitions
     - How we extend the Kubernetes API, and define custom configurations for each network/NIC we attach to our pods
 * "Default network"
     - Our "default network" is the configuration that we use that is the default NIC attached to each and every pod in our cluster, typically this is used for pod-to-pod communication.
@@ -68,6 +91,12 @@ This is going to spin up a number of pods, let's watch it come up...
 
 ```
 kubectl get pods --all-namespaces -w
+```
+
+Or if you don't like that format, you can use `watch` itself...
+
+```
+watch -n1 kubectl get pods --all-namespaces -o wide
 ```
 
 Next, we can check that state of our nodes, once everything is running we should see that `STATUS` changes from `NotReady` to `Ready` -- 
@@ -234,7 +263,7 @@ Now we can see that there are three interfaces!
 
 ### Tutorial
 
-First up, let's open up two SSH connections to the same host.
+First up, let's open up two SSH connections to the same host. If you want, use `tmux` to make a new screen.
 
 For this tutorial, we're going to act as root. Let's get that going.
 
@@ -255,6 +284,14 @@ export CNI_PATH=/opt/cni/bin; \
   export NETCONFPATH=/etc/alternate.net.d/; \
   export GOPATH=/root/src/go/; \
   ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
+```
+
+*NOTE*: Having trouble? If you run into a situation where you have an error reported, try running the `vppctl show interface addr` command if an IP address is shown, you're good to go. If not -- you should just type `exit` to exit the container, and then run the above `vpp-docker-run.sh` script again.
+
+```
+[root@c25985f1fe78 /]# ERROR returned: failed to read Remote config: <nil>
+[root@c25985f1fe78 /]# vppctl show interface addr
+local0 (dn):
 ```
 
 Cool, now you're in a running container -- let's list what we're seeing with `vppctl`.
@@ -292,19 +329,30 @@ vppctl ping 192.168.210.2
 
 ## SR-IOV Device Plugin
 
-Emulated with [virt-network-device-plugin](https://github.com/zshi-redhat/virt-network-device-plugin#quick-start).
+We're going to explore the use of a device plugin for 
+
+In this case -- we're emulating the experience using [virt-network-device-plugin](https://github.com/zshi-redhat/virt-network-device-plugin#quick-start). In reality you'll be using the [sriov-network-device-plugin](https://github.com/intel/sriov-network-device-plugin) when you go to plumb SR-IOV devices into your pods.
+
+Due to hardware/space/etc constraints in this tutorial setting -- we couldn't have SR-IOV hardware available for everyone. So instead this `virt-network-device-plugin` uses `virtio` devices instead. Each of the nodes you're using is a virtual machine, and has an additional virtio device that can be used by this emulated SR-IOV device plugin.
 
 ### Core Concepts
 
-```
-[ stub ]
-```
+* Scheduler awareness of hardware
+  - The reason that you can't "just use a CNI plugin" is that, while it'll probably work for a one-off test in your lab -- in production, a CNI plugin alone doesn't have scheduler awareness. The device plugin gives you a way to tell the Kubernetes scheduler that there are resources available on a particular node.
+* [ehost-device CNI plugin](https://github.com/zshi-redhat/ehost-device-cni)
+  - This is an enhanced version of the [host-device](https://github.com/containernetworking/plugins/tree/master/plugins/main/host-device) reference CNI plugin that allows for IPAM (IP Address Management) to be used as well.
+* Custom Kubernetes Build
+  - This currently requires a patch that's in progress for Kubernetes. 
+  - The cluster that you're currently using is based on a custom build of Kubernetes using this patch.
+  - The patch is avaible [on GitHub](https://github.com/kubernetes/kubernetes/compare/master...dashpole:device_id#diff-bf28da68f62a8df6e99e447c4351122).
+* Multus CNI
+  - Multus is used here in order to have this pod both plumbed to the "default network", and to have the additional 
 
 ### Tutorial
 
 Let's first create the CRD object for this, similarly to Multus.
 
-Move into the local clone...
+If you're root, exit from the root user. Move into the local clone, as non-root user.
 
 ```
 cd ~/virt-network-device-plugin/
@@ -329,6 +377,20 @@ Let's make it so we can run workloads on the master, here's where we'll run the 
 kubectl taint node kube-master-1 node-role.kubernetes.io/master:NoSchedule-
 kubectl label nodes kube-master-1 dedicated=master
 ```
+
+Note that we're doing two things here:
+
+1. We've removed a taint, this taint originally said: "Hey, please don't schedule pods on the Master".
+2. We've added a label on the master.
+
+Before you run the next command, take a close look at a couple lines here... It says: 
+
+```
+  nodeSelector:
+    dedicated: master
+```
+
+This means that we're saying "Hey, choose a node that has this label `dedicated` and has the value `master`". This will let the virt-device-plugin run on the Master with the above removal of the taint.
 
 Now let's spin up the device plugin itself...
 
@@ -375,20 +437,31 @@ spec:
 EOF
 ```
 
-Check out the logs of that pod...
+Go ahead and list the pods on your cluster, we'll show which nodes they're running on...
+
+```
+kubectl get pods -o wide
+```
+
+You'll notice that there's a `NODE` value of `kube-master-1` for the `virt-device-plugin`. This means that our device plugin is only running on the master, and is only aware of hardware that's on the master.
+
+Let's look at the logs of that pod...
 
 ```
 kubectl logs virt-device-plugin
 ```
 
-Look near the bottom of the logs for a line that reads `ListAndWatch` -- you'll see it picked up on two devices for us. Those devices will match what we see in `/sys/class/net`
-
+Look near the bottom of the logs for a line that reads `ListAndWatch` -- you'll see it picked up on two devices for us. Those devices will match what we see in `/sys/class/net`. Let's go ahead and list that for us, too.
 
 ```
 ls -lathr /sys/class/net/
 ```
 
-Ok, now let's spin up a pod...
+You'll notice that the PCI address in the `ListAndWatch` section matches the `eth1` listed above. In this case the `virt-network-device-plugin` has logic that says "Hey, by the way -- don't pick the default interface here".
+
+Before you spin up this pod in this next command -- let's note that it *does not* have a `NodeSelector` -- this means that it could be scheduled to any node. Now with that in mind...
+
+Let's spin up a pod...
 
 ```
 cat <<EOF | kubectl create -f -
@@ -417,23 +490,7 @@ spec:
 EOF
 ```
 
-Now let's describe that pod and see if there's anything wrong with it...
-
-```
-kubectl describe pod testpod1
-```
-
-If there's something wrong with it in the logs... Delete and recreate.
-
-```
-kubectl delete pod testpod1
-```
-
-Sometimes we have an issue here (it is alpha software after all) where it allocates the already used device on the system.
-
-And then use the above pod create again.
-
-Now we can exec in the pod and see it run!
+Now we can exec in the pod and see it has plumbed our virtual device into the pod!
 
 ```
 kubectl exec -it testpod1 -- ip a
@@ -441,6 +498,9 @@ kubectl exec -it testpod1 -- ip a
 
 You'll see two interfaces. `eth0` and `net1` -- where `net1` is the virtual device.
 
+## Do it yourself!
+
+You can create this own lab environment on your own -- we have instructions on how to create it available in [kube-ansible](https://github.com/redhat-nfvpe/kube-ansible/tree/dev/ons-tutorial/contrib) -- a suite of ansible playbooks to create a Kubernetes lab environment, and with steps that were used to create the lab which you've been using for this tutorial.
 
 ## Additional & Reference Materials
 
