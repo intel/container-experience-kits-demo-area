@@ -236,157 +236,6 @@ Now we can see that there are three interfaces!
 * `eth0` attached to our default network (flannel)
 * `net1` attached to our macvlan network we just created.
 
-## Userspace CNI
-
-In this tutorial we will run the Userspace CNI. The Userspace CNI is used to add userspace networking interfaces to a container. Userspace networking interfaces require special handling because the interfaces are not owned by the kernel, so they cannot be added to a container through normal namespace provisioning. Work needs to be done on the host to created the interface in the local vSwitch, and work needs to be performed in the container to consume the interface. Even though the userspace interfaces require special handling, they are desired because running outside the kernel allows for some software optimizations that produce higher throughput at the cost of higher CPU usage.
-
-The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). This tutorial uses VPP as the vSwitch (see configuration below, Line 6), but Userspace CNI also supports OVS-DPDK.
-
-![VPP Demo](images/Userspace_CNI_Demo.png)
-
-On the host, the configuration for the Userspace CNI is as follows:
-```
-# cat /etc/alternate.net.d/90-userspace.conf
-01 {
-02        "cniVersion": "0.3.1",
-03        "type": "userspace",
-04        "name": "memif-network",
-05        "host": {
-06                "engine": "vpp",
-07                "iftype": "memif",
-08                "netType": "bridge",
-09                "memif": {
-10                        "role": "master",
-11                        "mode": "ethernet"
-12                },
-13                "bridge": {
-14                        "bridgeId": 4
-15                }
-16        },
-17        "container": {
-18                "engine": "vpp",
-19                "iftype": "memif",
-20                "netType": "interface",
-21                "memif": {
-22                        "role": "slave",
-23                        "mode": "ethernet"
-24                }
-25        },
-26        "ipam": {
-27                "type": "host-local",
-28                "subnet": "192.168.210.0/24",
-29                "routes": [
-30                        { "dst": "0.0.0.0/0" }
-31                ]
-32        }
-33 }
-```
-
-Based on this configuration data, the Userspace CNI will perform the following steps for each container that is spun up:
-* Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). {Lines 7, 9-12}
-* Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge. {Lines 8,13-15}
-* Call the IPAM CNI to retrieve the container IP values. {Lines 26-32}
-* Write the container configuration and IPAM results structure to DB. {Lines 17-25, plus results from previous IPAM call}
-
-On container boot, an application in the container (vpp-app) will read the DB and create a memif interface in the container and add the IP settings to interface.
-
-NOTE: This tutorial is using a local script to call and exercise the Userspace CNI. In a deployment scenario, the Userspace CNI is intended to run with Multus, which can add multiple interfaces into a container. Multus will handle adding the 'default network' in addition to the userspace interface shown here. The Userspace CNI currently works with Multus and Kubernetes but was omitted here for simplicity and keep the focus on Userspace CNI.
-
-### Core Concepts
-
-* "Userspace networking"
-    - Typical packet processing on a linux distribution occurs in the kernel. With "userspace networking", packet processing occurs in software outside the kernel. Software techniques such as processing a batch of packets at a time, poll driven instead of interupt driven, and data/instruction cache optimization can produce higher data rates than pure kernel packet processing.
-* vhost-user
-    - vhost-user is a protocol that is used to setup virtqueues on top of shared memory between two userspace processes on the same host. The vhost user protocol consists of a control path and a data path. Once data path is established, packets in the shared memory can be shared between the two userspace processes via a fast zero-copy.
-    - In userspace networking, a vhost-user interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the virtual queues back by shared memory.
-* memif
-    - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
-    - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the decriptor rings and packet buffers back by shared memory.
-
-### Tutorial
-
-First up, *let's open up two SSH connections to the same host*, use the backup SSH connection string -- or, even better -- If you want, use `tmux` to make a new screen (if you created a new screen in the beginning with `ctrl+b, c` then you can use `ctrl+b, p` to go to the preview screen, and keep using that to switch between them).
-
-For this tutorial, we're going to act as root. Let's get that going.
-
-```
-sudo -i
-```
-
-Now, we'll move into our clone of the userspace CNI
-
-```
-cd src/go/src/github.com/Billy99/user-space-net-plugin/
-```
-
-Here we're going to use a helper script that is used during CNI development. Let's call it and get a container going.
-
-```
-export CNI_PATH=/opt/cni/bin; \
-  export NETCONFPATH=/etc/alternate.net.d/; \
-  export GOPATH=/root/src/go/; \
-  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
-```
-
-*NO PROMPT?* This will create a bunch of output -- go ahead an hit `enter` a few times to get a prompt.
-
-*NOTE*: Having trouble? If you run into a situation where you have an error reported, try running the `vppctl show interface addr` command if an IP address is shown, you're good to go. If not -- you should just type `exit` to exit the container, and then run the above `vpp-docker-run.sh` script again.
-
-```
-[root@c25985f1fe78 /]# ERROR returned: failed to read Remote config: <nil>
-[root@c25985f1fe78 /]# vppctl show interface addr
-local0 (dn):
-```
-
-Cool, now you're in a running container -- let's list what we're seeing with `vppctl`.
-
-```
-vppctl show interface
-vppctl show mode
-vppctl show memif
-```
-
-You'll see that you have a `memif` available here.
-
-Let's show the IP address here:
-
-```
-vppctl show interface addr
-```
-
-Go ahead and copy that into your paste buffer.
-
-**IN THE SECOND SCREEN** -- Now, let's create another container -- use the same method as before.
-
-Make sure you're root, and in the proper directory:
-
-```
-cd src/go/src/github.com/Billy99/user-space-net-plugin/
-```
-
-Then create the container same as we did before:
-
-```
-export CNI_PATH=/opt/cni/bin; \
-  export NETCONFPATH=/etc/alternate.net.d/; \
-  export GOPATH=/root/src/go/; \
-  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
-```
-
-Now get the IPs for each of the containers you have running in open windows, you can do so with:
-
-```
-vppctl show interface addr
-```
-
-Get them for both containers, and then ping one from another. Note that we're using `vppctl ping ...` because we're in userspace -- we can't just use plain old `ping`.
-
-Now let's see if we can get a ping between them:
-
-```
-vppctl ping PASTE_THE_COPIED_IP_HERE repeat 5
-```
-
 ## SR-IOV Device Plugin
 
 We're going to explore the use of a device plugin for 
@@ -597,6 +446,157 @@ spec:
         memory: "128Mi"
         kernel.org/virt: '1'
 EOF
+```
+
+## Userspace CNI
+
+In this tutorial we will run the Userspace CNI. The Userspace CNI is used to add userspace networking interfaces to a container. Userspace networking interfaces require special handling because the interfaces are not owned by the kernel, so they cannot be added to a container through normal namespace provisioning. Work needs to be done on the host to created the interface in the local vSwitch, and work needs to be performed in the container to consume the interface. Even though the userspace interfaces require special handling, they are desired because running outside the kernel allows for some software optimizations that produce higher throughput at the cost of higher CPU usage.
+
+The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). This tutorial uses VPP as the vSwitch (see configuration below, Line 6), but Userspace CNI also supports OVS-DPDK.
+
+![VPP Demo](images/Userspace_CNI_Demo.png)
+
+On the host, the configuration for the Userspace CNI is as follows:
+```
+# cat /etc/alternate.net.d/90-userspace.conf
+01 {
+02        "cniVersion": "0.3.1",
+03        "type": "userspace",
+04        "name": "memif-network",
+05        "host": {
+06                "engine": "vpp",
+07                "iftype": "memif",
+08                "netType": "bridge",
+09                "memif": {
+10                        "role": "master",
+11                        "mode": "ethernet"
+12                },
+13                "bridge": {
+14                        "bridgeId": 4
+15                }
+16        },
+17        "container": {
+18                "engine": "vpp",
+19                "iftype": "memif",
+20                "netType": "interface",
+21                "memif": {
+22                        "role": "slave",
+23                        "mode": "ethernet"
+24                }
+25        },
+26        "ipam": {
+27                "type": "host-local",
+28                "subnet": "192.168.210.0/24",
+29                "routes": [
+30                        { "dst": "0.0.0.0/0" }
+31                ]
+32        }
+33 }
+```
+
+Based on this configuration data, the Userspace CNI will perform the following steps for each container that is spun up:
+* Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). {Lines 7, 9-12}
+* Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge. {Lines 8,13-15}
+* Call the IPAM CNI to retrieve the container IP values. {Lines 26-32}
+* Write the container configuration and IPAM results structure to DB. {Lines 17-25, plus results from previous IPAM call}
+
+On container boot, an application in the container (vpp-app) will read the DB and create a memif interface in the container and add the IP settings to interface.
+
+NOTE: This tutorial is using a local script to call and exercise the Userspace CNI. In a deployment scenario, the Userspace CNI is intended to run with Multus, which can add multiple interfaces into a container. Multus will handle adding the 'default network' in addition to the userspace interface shown here. The Userspace CNI currently works with Multus and Kubernetes but was omitted here for simplicity and keep the focus on Userspace CNI.
+
+### Core Concepts
+
+* "Userspace networking"
+    - Typical packet processing on a linux distribution occurs in the kernel. With "userspace networking", packet processing occurs in software outside the kernel. Software techniques such as processing a batch of packets at a time, poll driven instead of interupt driven, and data/instruction cache optimization can produce higher data rates than pure kernel packet processing.
+* vhost-user
+    - vhost-user is a protocol that is used to setup virtqueues on top of shared memory between two userspace processes on the same host. The vhost user protocol consists of a control path and a data path. Once data path is established, packets in the shared memory can be shared between the two userspace processes via a fast zero-copy.
+    - In userspace networking, a vhost-user interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the virtual queues back by shared memory.
+* memif
+    - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
+    - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the decriptor rings and packet buffers back by shared memory.
+
+### Tutorial
+
+First up, *let's open up two SSH connections to the same host*, use the backup SSH connection string -- or, even better -- If you want, use `tmux` to make a new screen (if you created a new screen in the beginning with `ctrl+b, c` then you can use `ctrl+b, p` to go to the preview screen, and keep using that to switch between them).
+
+For this tutorial, we're going to act as root. Let's get that going.
+
+```
+sudo -i
+```
+
+Now, we'll move into our clone of the userspace CNI
+
+```
+cd src/go/src/github.com/Billy99/user-space-net-plugin/
+```
+
+Here we're going to use a helper script that is used during CNI development. Let's call it and get a container going.
+
+```
+export CNI_PATH=/opt/cni/bin; \
+  export NETCONFPATH=/etc/alternate.net.d/; \
+  export GOPATH=/root/src/go/; \
+  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
+```
+
+*NO PROMPT?* This will create a bunch of output -- go ahead an hit `enter` a few times to get a prompt.
+
+*NOTE*: Having trouble? If you run into a situation where you have an error reported, try running the `vppctl show interface addr` command if an IP address is shown, you're good to go. If not -- you should just type `exit` to exit the container, and then run the above `vpp-docker-run.sh` script again.
+
+```
+[root@c25985f1fe78 /]# ERROR returned: failed to read Remote config: <nil>
+[root@c25985f1fe78 /]# vppctl show interface addr
+local0 (dn):
+```
+
+Cool, now you're in a running container -- let's list what we're seeing with `vppctl`.
+
+```
+vppctl show interface
+vppctl show mode
+vppctl show memif
+```
+
+You'll see that you have a `memif` available here.
+
+Let's show the IP address here:
+
+```
+vppctl show interface addr
+```
+
+Go ahead and copy that into your paste buffer.
+
+**IN THE SECOND SCREEN** -- Now, let's create another container -- use the same method as before.
+
+Make sure you're root, and in the proper directory:
+
+```
+cd src/go/src/github.com/Billy99/user-space-net-plugin/
+```
+
+Then create the container same as we did before:
+
+```
+export CNI_PATH=/opt/cni/bin; \
+  export NETCONFPATH=/etc/alternate.net.d/; \
+  export GOPATH=/root/src/go/; \
+  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
+```
+
+Now get the IPs for each of the containers you have running in open windows, you can do so with:
+
+```
+vppctl show interface addr
+```
+
+Get them for both containers, and then ping one from another. Note that we're using `vppctl ping ...` because we're in userspace -- we can't just use plain old `ping`.
+
+Now let's see if we can get a ping between them:
+
+```
+vppctl ping PASTE_THE_COPIED_IP_HERE repeat 5
 ```
 
 ## Do it yourself!
