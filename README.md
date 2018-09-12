@@ -17,19 +17,22 @@ Get the presentation [slide - deck](https://www.slideshare.net/KuralamudhanRamak
 Table of Contents
 =================
 
-   * [USB Stick content details](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#introduction)
-      * [VM Set-up](https://github.com/intel/container-experience-kits-demo-area/blob/master/usb-stick/README.md#automated)
    * [Demo Instruction](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace#demo-instruction)
-   * [Ansible Script](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#introduction)
-      * [All in one script](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#installation)
+   * [Baremetal container model](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#baremetal-container-model)
    * [NFV Features in Kubernetes](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#introduction)
-      * [Baremetal container model](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#baremetal-container-model)
+   * Kubernetes Network
+      * [Multus CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#multus-cni)
+      * [Userspace CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#Userspace-cni)
+      * [SRIOV Network Device plugin](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
+        * [SRIOV CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
+   * Kubernetes Compute(Will not be covered in the ONS Summit)
+      * [CPU Manager for K8s](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
+      * [NUMA Manager](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
+      * [QAT](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
       * [Node features Discovery](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#node-feature-discovery)
-      * [CMK](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
-      * [Multus](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#multus-cni)
-      * [SRIOV video Demo](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
       * [Performance Benchmarking Result](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#performance-figures)
    * [Container Exp kits details](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/exp-kits/README.md#introduction)
+   * [Kube Ansible Script](https://github.com/intel/container-experience-kits-demo-area/blob/master/software/README.md#introduction)
    * [Contacts](#contacts)
 
 ## <a name="help"></a>Need assistance
@@ -54,8 +57,8 @@ Please fill in the Questions/feedback -  [google-form](https://goo.gl/forms/iMAv
     * [Enhanced Platform Awareness Features in Kubernetes ](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-in-kubernetes-application-note.pdf)
 * Project github pages
     * [Multus](https://github.com/Intel-Corp/multus-cni)
+    
     * [SRIOV - DPDK CNI](https://github.com/Intel-Corp/sriov-cni)
-    * [Vhostuser - VPP & OVS - DPDK CNI](https://github.com/intel/vhost-user-net-plugin)
     * [Node Feature Discovery](https://github.com/kubernetes-incubator/node-feature-discovery)
     * [CPU Manager for Kubernetes](https://github.com/Intel-Corp/CPU-Manager-for-Kubernetes)
 
