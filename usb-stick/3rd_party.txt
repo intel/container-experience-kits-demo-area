@@ -1,8 +1,0 @@
-Ubuntu Xenial Server cloud image OVA:
-https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64.ova
-
-Ubuntu .deb packages:
-http://archive.ubuntu.com
-
-Iso creation script (MIT license) (iso/build.sh):
-https://github.com/frederickding/Cloud-Init-ISO
