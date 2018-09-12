@@ -1,7 +1,0 @@
-build/
-iso/image/packages
-*.ova
-*.iso
-*.deb
-*.log
-kubecon_usb.tar
