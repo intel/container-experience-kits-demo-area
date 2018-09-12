@@ -2,13 +2,14 @@
 
 This tutorial will be a demo for a number of technologies for enabling NFV features in Kubernetes. 
 
-For all requirements for the hands-on session checks the table of contents below. The audience will be provided with a USB stick with all open source software installation in a single script. Please check with the lab co-ordinators during the session to get the USB stick. Else, please follow the instruction in the [generating the USB stick contents](https://github.com/intel/container-experience-kits-demo-area/tree/master/usb-stick#generating-usb-stick-content) and download the required software on your own and prepare all of the prerequisites. Co-ordinators will help you with the software installation.
+For all requirements for the hands-on session checks the table of contents below. The audience will be provided with a SSH connection to work on the virutal env. Please check with the lab co-ordinators during the session for the assistances.
 
 Abstract details as follows:
 
-> _*"Network Orchestration using Containers and Kubernetes, are being considered by Communication Service Providers for next-gen cloud-based network deployments. While these technologies have been around and deployed for years now, more needs to be done in order to allow managed, performant and predictable service delivery, as required by Communication Service Providers. Intel has been working with partners and with open source communities to address those requirements and to deliver consumable capabilities and performance by enabling NFV Features in Kubernetes."*_
+> _*"In this tutorial, you will get to put your hands on the keyboard and spin up a Kubernetes environment and enable some NFV features that can be used today. This includes Kubernetes Networking and computing features.
+The Kubernetes world is often focused on web-scale problems -- in the NFV world (and the high performance networking world-at-large) we have a lot of problems to solve that aren’t just simply “a single interface with HTTPS traffic”. You'll have a walkthrough to get a Kubernetes cluster up, and look into attaching multiple network interfaces to pods using Multus CNI, - a CNI plugin that allows you to attach multiple network interfaces to your Kubernetes pods and have an introduction on using SR-IOV from pods. You'll be introduced to a number of tools to get you equipped enough to get involved in the open source community in which these tools are being developed."*_
 
-Through this hands-on lab session,  you will learn about Intel’s Container Bare Metal Experience Kits, the new capabilities introduced by Intel and Kubernetes features that will enable you to develop NFV use cases in Container-bare-metal deployments
+Through this hands-on lab session,  you will learn about Intel’s Container Bare Metal Experience Kits, and Kubernetes features that will enable you to develop NFV use cases in Container-bare-metal deployments
 
 Get the presentation [slide - deck](https://www.slideshare.net/KuralamudhanRamakris/enabling-nfv-features-in-kubernetes-83923352)
 
