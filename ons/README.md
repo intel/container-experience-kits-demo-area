@@ -255,11 +255,70 @@ Now we can see that there are three interfaces!
 
 ## Userspace CNI
 
+In this tutorial we will run the Userspace CNI. The Userspace CNI is used to add userspace networking interfaces to a container. Userspace networking interfaces require special handling because the interfaces are not owned by the kernel, so they cannot be added to a container through normal namespace provisioning. Work needs to be done on the host to created the interface in the local vSwitch, and work needs to be performed in the container to consume the interface. Even though the userspace interfaces require special handling, they are desired because running outside the kernel allows for some software optimizations that produce higher throughput at the cost of higher CPU usage.
+
+The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). This tutorial uses VPP as the vSwitch (see configuration below, Line 6), but Userspace CNI also supports OVS-DPDK.
+
+![VPP Demo](images/Userspace_CNI_Demo.png)
+
+On the host, the configuration for the Userspace CNI is as follows:
+```
+# cat /etc/alternate.net.d/90-userspace.conf
+01 {
+02        "cniVersion": "0.3.1",
+03        "type": "userspace",
+04        "name": "memif-network",
+05        "host": {
+06                "engine": "vpp",
+07                "iftype": "memif",
+08                "netType": "bridge",
+09                "memif": {
+10                        "role": "master",
+11                        "mode": "ethernet"
+12                },
+13                "bridge": {
+14                        "bridgeId": 4
+15                }
+16        },
+17        "container": {
+18                "engine": "vpp",
+19                "iftype": "memif",
+20                "netType": "interface",
+21                "memif": {
+22                        "role": "slave",
+23                        "mode": "ethernet"
+24                }
+25        },
+26        "ipam": {
+27                "type": "host-local",
+28                "subnet": "192.168.210.0/24",
+29                "routes": [
+30                        { "dst": "0.0.0.0/0" }
+31                ]
+32        }
+33 }
+```
+
+Based on this configuration data, the Userspace CNI will perform the following steps for each container that is spun up:
+* Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). {Lines 7, 9-12}
+* Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge. {Lines 8,13-15}
+* Call the IPAM CNI to retrieve the container IP values. {Lines 26-32}
+* Write the container configuration and IPAM results structure to DB. {Lines 17-25, plus results from previous IPAM call}
+
+On container boot, an application in the container (vpp-app) will read the DB and create a memif interface in the container and add the IP settings to interface.
+
+NOTE: This tutorial is using a local script to call and exercise the Userspace CNI. In a deployment scenario, the Userspace CNI is intended to run with Multus, which can add multiple interfaces into a container. Multus will handle adding the 'default network' in addition to the userspace interface shown here. The Userspace CNI currently works with Multus and Kubernetes but was omitted here for simplicity and keep the focus on Userspace CNI.
+
 ### Core Concepts
 
-```
-[ stub, please fill in! ]
-```
+* "Userspace networking"
+    - Typical packet processing on a linux distribution occurs in the kernel. With "userspace networking", packet processing occurs in software outside the kernel. Software techniques such as processing a batch of packets at a time, poll driven instead of interupt driven, and data/instruction cache optimization can produce higher data rates than pure kernel packet processing.
+* vhost-user
+    - vhost-user is a protocol that is used to setup virtqueues on top of shared memory between two userspace processes on the same host. The vhost user protocol consists of a control path and a data path. Once data path is established, packets in the shared memory can be shared between the two userspace processes via a fast zero-copy.
+    - In userspace networking, a vhost-user interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the virtual queues back by shared memory.
+* memif
+    - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
+    - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the decriptor rings and packet buffers back by shared memory.
 
 ### Tutorial
 
