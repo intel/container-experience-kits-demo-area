@@ -20,13 +20,13 @@ Let's get setup to use our workstation! At each of your desks, you'll have a num
 
 Here you'll be presented with a table with a number, use the SSH connection string as provided and you'll wind up on the machine. Do you notice that there's 2 SSH links? One is a backup in case you type `exit` -- generally, don't type `exit`! If you do by accident (or, more likely, out of habit), you can use the second one. 
 
-First things first! Let's make a new window.
+First things first! Let's make a new tmux window.
 
 ```
-tmux new
+ctrl+b [release the keys, then hit] c
 ```
 
-This provides us a layer of redundancy in case someone types `exit`.
+This provides us a layer of redundancy in case someone types `exit`. Need more help with tmux? Try the [tmuxcheatsheet.com](https://tmuxcheatsheet.com/).
 
 Now! Let's make sure that no one else is accidentally using our instance! We'll use the `wall` command to announce our name.
 
@@ -64,10 +64,10 @@ cd multus-cni
 
 Typically, by default we setup using the "quick start guide" method, which deploys a YAML file with a daemonset and some CRDs.
 
-Let's edit that file.
+Let's look at that file.
 
 ```
-vi images/multus-daemonset.yml
+cat images/multus-daemonset.yml
 ```
 
 Taking a look around, you'll see this is comprised of a few parts -- each between the `---` YAML delimiter.
@@ -102,11 +102,7 @@ watch -n1 kubectl get pods --all-namespaces -o wide
 Next, we can check that state of our nodes, once everything is running we should see that `STATUS` changes from `NotReady` to `Ready` -- 
 
 ```
-$ kubectl get nodes
-NAME            STATUS    ROLES     AGE       VERSION
-kube-master-1   Ready     master    3h        v1.11.2
-kube-node-2     Ready     <none>    3h        v1.11.2
-kube-node-3     Ready     <none>    3h        v1.11.2
+kubectl get nodes
 ```
 
 This state is determined by the Kubelet by looking for the precence of a CNI configuration in the CNI configuration directory -- by default this is `/etc/cni/net.d`, and this holds true for our configuration as well.
@@ -147,7 +143,7 @@ kubectl get pods -w
 Once it shows `Running` in the `STATUS`, let's execute a command in that pod...
 
 ```
-kubectl exec -it vanillapod -- ip a
+kubectl exec -it vanillapod -- ip -d a
 ```
 
 Take a look at the output, you'll see two interfaces -- one doesn't count! The loopback! And you'll also see a `eth0` -- this one is attached to the Flannel network. In this case, it's in a `10.244.0.0/8` address.
@@ -197,9 +193,7 @@ You can take a look and see what's available for custom resources created under 
 You can do that with:
 
 ```
-$ kubectl get network-attachment-definitions.k8s.cni.cncf.io
-NAME           AGE
-macvlan-conf   4m
+kubectl get network-attachment-definitions.k8s.cni.cncf.io
 ```
 
 Here we can see that `macvlan-conf` has been created. That's the name we gave it above. 
@@ -233,7 +227,7 @@ kubectl get pods -w
 And when it comes up, now we can take a look at the interfaces that were created and attached to that pod:
 
 ```
-kubectl exec -it multipod -- ip a
+kubectl exec -it multipod -- ip -d a
 ```
 
 Now we can see that there are three interfaces!
@@ -241,17 +235,6 @@ Now we can see that there are three interfaces!
 * A loopback
 * `eth0` attached to our default network (flannel)
 * `net1` attached to our macvlan network we just created.
-
-
-
-### What about debugging a failed Configuration
-
-```
-[ more to do here! ]
-```
-
-* Reconfigure Multus to use advanced logging
-* Spin up a bad pod...
 
 ## Userspace CNI
 
@@ -322,12 +305,12 @@ NOTE: This tutorial is using a local script to call and exercise the Userspace C
 
 ### Tutorial
 
-First up, let's open up two SSH connections to the same host. If you want, use `tmux` to make a new screen.
+First up, *let's open up two SSH connections to the same host*, use the backup SSH connection string -- or, even better -- If you want, use `tmux` to make a new screen (if you created a new screen in the beginning with `ctrl+b, c` then you can use `ctrl+b, p` to go to the preview screen, and keep using that to switch between them).
 
 For this tutorial, we're going to act as root. Let's get that going.
 
 ```
-sudo su -
+sudo -i
 ```
 
 Now, we'll move into our clone of the userspace CNI
@@ -344,6 +327,8 @@ export CNI_PATH=/opt/cni/bin; \
   export GOPATH=/root/src/go/; \
   ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
 ```
+
+*NO PROMPT?* This will create a bunch of output -- go ahead an hit `enter` a few times to get a prompt.
 
 *NOTE*: Having trouble? If you run into a situation where you have an error reported, try running the `vppctl show interface addr` command if an IP address is shown, you're good to go. If not -- you should just type `exit` to exit the container, and then run the above `vpp-docker-run.sh` script again.
 
@@ -363,7 +348,23 @@ vppctl show memif
 
 You'll see that you have a `memif` available here.
 
-Now, let's create another container -- use the same method as before.
+Let's show the IP address here:
+
+```
+vppctl show interface addr
+```
+
+Go ahead and copy that into your paste buffer.
+
+**IN THE SECOND SCREEN** -- Now, let's create another container -- use the same method as before.
+
+Make sure you're root, and in the proper directory:
+
+```
+cd src/go/src/github.com/Billy99/user-space-net-plugin/
+```
+
+Then create the container same as we did before:
 
 ```
 export CNI_PATH=/opt/cni/bin; \
@@ -383,7 +384,7 @@ Get them for both containers, and then ping one from another. Note that we're us
 Now let's see if we can get a ping between them:
 
 ```
-vppctl ping 192.168.210.2
+vppctl ping PASTE_THE_COPIED_IP_HERE repeat 5
 ```
 
 ## SR-IOV Device Plugin
@@ -433,8 +434,8 @@ kubectl describe network-attachment-definitions.k8s.cni.cncf.io virt-net1
 Let's make it so we can run workloads on the master, here's where we'll run the virt-device-plugin itself.
 
 ```
-kubectl taint node kube-master-1 node-role.kubernetes.io/master:NoSchedule-
-kubectl label nodes kube-master-1 dedicated=master
+kubectl taint node $HOSTNAME node-role.kubernetes.io/master:NoSchedule-
+kubectl label nodes $HOSTNAME dedicated=master
 ```
 
 Note that we're doing two things here:
@@ -527,7 +528,7 @@ cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Pod
 metadata:
-  name: testpod1
+  name: virtdevicepod1
   labels:
     env: test
   annotations:
@@ -552,10 +553,51 @@ EOF
 Now we can exec in the pod and see it has plumbed our virtual device into the pod!
 
 ```
-kubectl exec -it testpod1 -- ip a
+kubectl exec -it virtdevicepod1 -- ip -d a
 ```
 
 You'll see two interfaces. `eth0` and `net1` -- where `net1` is the virtual device.
+
+And check out that it's running on the proper node:
+
+```
+kubectl get pods -o wide
+```
+
+And you can find out more about the resources used with:
+
+```
+kubectl describe node $HOSTNAME | less
+```
+
+If you create a secondary pod, you can also see that it won't get assigned, and will remain in a pending status:
+
+```
+cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: virtdevicepod2
+  labels:
+    env: test
+  annotations:
+    k8s.v1.cni.cncf.io/networks: virt-net1
+spec:
+  containers:
+  - name: appcntr1
+    image: dougbtv/centos-network
+    imagePullPolicy: IfNotPresent
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 300000; done;" ]
+    resources:
+      requests:
+        memory: "128Mi"
+        kernel.org/virt: '1'
+      limits:
+        memory: "128Mi"
+        kernel.org/virt: '1'
+EOF
+```
 
 ## Do it yourself!
 
