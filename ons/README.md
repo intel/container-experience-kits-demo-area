@@ -6,8 +6,8 @@ Agenda:
 
 * Workstation setup
 * Multus CNI
-* Userspace CNI
 * SR-IOV Device Plugin (emulated)
+* Userspace CNI
 * Additional & Reference Materials
 
 ## Requirements
@@ -53,7 +53,7 @@ You should see the master and a node, and the `STATUS` should read `NotReady` --
 * "Default network"
     - Our "default network" is the configuration that we use that is the default NIC attached to each and every pod in our cluster, typically this is used for pod-to-pod communication.
 
-### How-to
+### A1. Inspecting the Multus daemonset-style installation
 
 Inspect your work area, firstly, list your home directory, You'll see there's a `./multus-cni`. Move into that directory
 
@@ -81,6 +81,8 @@ Taking a look around, you'll see this is comprised of a few parts -- each betwee
 * A Daemonset
     - A way to define a pod that runs on each host in our cluster, in this case it is used to place our Multus binary and flat file configuration on each machine in the cluster.
 
+### A2. Install Multus and the default network
+
 Let's take this for a spin -- we'll deploy both the Multus Daemonset, and Flannel, which will be used for our "default network" -- 
 
 ```
@@ -98,6 +100,8 @@ Or if you don't like that format, you can use `watch` itself...
 ```
 watch -n1 kubectl get pods --all-namespaces -o wide
 ```
+
+### A3. Verify the installation of Multus & default network
 
 Next, we can check that state of our nodes, once everything is running we should see that `STATUS` changes from `NotReady` to `Ready` -- 
 
@@ -117,6 +121,8 @@ Looking at this configuration file, you'll see that there's a number of things c
 
 * `delegates`: This defines our default network, in this case we "delegate" the work for the default network to Flannel, which we use in this scenario as a pod-to-pod network.
 * `type`: This is a required CNI configuration field, and in each place that you see `type` that means that CNI is going to call the binary (by default in `/opt/cni/bin`) of the value of `type`, in this case the top level `type` is set to `multus` which is what we want to be called first -- then in the `delegates` section we have it the `type` set to `flannel`, in this case Multus is what calls this binary, and it will be the first binary called and always attached @ `eth0`.
+
+### A4. Run a pod without additional interfaces
 
 Let's start a "vanilla" pod, this is kind of the control in our experiment here.
 
@@ -147,6 +153,8 @@ kubectl exec -it vanillapod -- ip -d a
 ```
 
 Take a look at the output, you'll see two interfaces -- one doesn't count! The loopback! And you'll also see a `eth0` -- this one is attached to the Flannel network. In this case, it's in a `10.244.0.0/8` address.
+
+### A5. Create a new CNI configuration stored as a custom resource
 
 Now, let's setup a custom network we'll attach as a second interface to a different pod.
 
@@ -200,6 +208,8 @@ Here we can see that `macvlan-conf` has been created. That's the name we gave it
 
 We can implement an attachment to this `macvlan-conf` configured network by referencing that name in an annotation in another pod. Let's create it. Take a look closely here and see that there is an `annotations` section -- in this case we call out the namespace under which it lives, and then the value of the name of the custom resource we just created, which reads as: `k8s.v1.cni.cncf.io/networks: macvlan-conf`
 
+### A6. Create a pod with an additional interface
+
 Let's move forward and create that pod:
 
 ```
@@ -223,6 +233,8 @@ Watch the pod come up again...
 ```
 kubectl get pods -w
 ```
+
+### A7. Verify the interfaces available in the pod
 
 And when it comes up, now we can take a look at the interfaces that were created and attached to that pod:
 
@@ -257,7 +269,7 @@ Due to hardware/space/etc constraints in this tutorial setting -- we couldn't ha
 * Multus CNI
   - Multus is used here in order to have this pod both plumbed to the "default network", and to have the additional 
 
-### Tutorial
+### B1. Create the CNI configuration for the ehost-device plugin
 
 Let's first create the CRD object for this, similarly to Multus.
 
@@ -282,6 +294,8 @@ kubectl describe network-attachment-definitions.k8s.cni.cncf.io virt-net1
 
 Let's make it so we can run workloads on the master, here's where we'll run the virt-device-plugin itself.
 
+### B2. Setup pod affinity to run device plugin on master
+
 ```
 kubectl taint node $HOSTNAME node-role.kubernetes.io/master:NoSchedule-
 kubectl label nodes $HOSTNAME dedicated=master
@@ -300,6 +314,8 @@ Before you run the next command, take a close look at a couple lines here... It 
 ```
 
 This means that we're saying "Hey, choose a node that has this label `dedicated` and has the value `master`". This will let the virt-device-plugin run on the Master with the above removal of the taint.
+
+### B3. Starting the device plugin
 
 Now let's spin up the device plugin itself...
 
@@ -354,6 +370,8 @@ kubectl get pods -o wide
 
 You'll notice that there's a `NODE` value of `kube-master-1` for the `virt-device-plugin`. This means that our device plugin is only running on the master, and is only aware of hardware that's on the master.
 
+### B4. Inspecting the discovered devices from the device plugin
+
 Let's look at the logs of that pod...
 
 ```
@@ -369,6 +387,8 @@ ls -lathr /sys/class/net/
 You'll notice that the PCI address in the `ListAndWatch` section matches the `eth1` listed above. In this case the `virt-network-device-plugin` has logic that says "Hey, by the way -- don't pick the default interface here".
 
 Before you spin up this pod in this next command -- let's note that it *does not* have a `NodeSelector` -- this means that it could be scheduled to any node. Now with that in mind...
+
+### B5. Creating a pod to use the device plugin
 
 Let's spin up a pod...
 
@@ -399,6 +419,8 @@ spec:
 EOF
 ```
 
+### B6. Inspecting the results of the pod using the device
+
 Now we can exec in the pod and see it has plumbed our virtual device into the pod!
 
 ```
@@ -413,11 +435,15 @@ And check out that it's running on the proper node:
 kubectl get pods -o wide
 ```
 
+### B7. Review the resources available on the node
+
 And you can find out more about the resources used with:
 
 ```
 kubectl describe node $HOSTNAME | less
 ```
+
+### B9. Create a pod that doesn't have a way to get scheduled.
 
 If you create a secondary pod, you can also see that it won't get assigned, and will remain in a pending status:
 
@@ -515,7 +541,7 @@ NOTE: This tutorial is using a local script to call and exercise the Userspace C
     - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
     - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the decriptor rings and packet buffers back by shared memory.
 
-### Tutorial
+### C1. Setup workspace
 
 First up, *let's open up two SSH connections to the same host*, use the backup SSH connection string -- or, even better -- If you want, use `tmux` to make a new screen (if you created a new screen in the beginning with `ctrl+b, c` then you can use `ctrl+b, p` to go to the preview screen, and keep using that to switch between them).
 
@@ -532,6 +558,8 @@ cd src/go/src/github.com/Billy99/user-space-net-plugin/
 ```
 
 Here we're going to use a helper script that is used during CNI development. Let's call it and get a container going.
+
+### C2. Create the first container using userspace CNI
 
 ```
 export CNI_PATH=/opt/cni/bin; \
@@ -550,6 +578,8 @@ export CNI_PATH=/opt/cni/bin; \
 local0 (dn):
 ```
 
+### C3. Use `vppctl` to show interfaces and properties
+
 Cool, now you're in a running container -- let's list what we're seeing with `vppctl`.
 
 ```
@@ -567,6 +597,8 @@ vppctl show interface addr
 ```
 
 Go ahead and copy that into your paste buffer.
+
+### C4. Create secondary container
 
 **IN THE SECOND SCREEN** -- Now, let's create another container -- use the same method as before.
 
@@ -592,6 +624,8 @@ vppctl show interface addr
 ```
 
 Get them for both containers, and then ping one from another. Note that we're using `vppctl ping ...` because we're in userspace -- we can't just use plain old `ping`.
+
+### C5. Ping between the two containers
 
 Now let's see if we can get a ping between them:
 
