@@ -294,101 +294,29 @@ kubectl describe network-attachment-definitions.k8s.cni.cncf.io virt-net1
 
 Let's make it so we can run workloads on the master, here's where we'll run the virt-device-plugin itself.
 
-### B2. Setup pod affinity to run device plugin on master
-
-```
-kubectl taint node $HOSTNAME node-role.kubernetes.io/master:NoSchedule-
-kubectl label nodes $HOSTNAME dedicated=master
-```
-
-Note that we're doing two things here:
-
-1. We've removed a taint, this taint originally said: "Hey, please don't schedule pods on the Master".
-2. We've added a label on the master.
-
-Before you run the next command, take a close look at a couple lines here... It says: 
-
-```
-  nodeSelector:
-    dedicated: master
-```
-
-This means that we're saying "Hey, choose a node that has this label `dedicated` and has the value `master`". This will let the virt-device-plugin run on the Master with the above removal of the taint.
-
-### B3. Starting the device plugin
+### B2. Starting the device plugin
 
 Now let's spin up the device plugin itself...
 
 ```
-cat <<EOF | kubectl create -f -
-kind: Pod
-apiVersion: v1
-metadata:
-        name: virt-device-plugin
-spec:
-  nodeSelector:
-    dedicated: master
-  tolerations:
-    - key: node-role.kubernetes.io/master
-      operator: Equal
-      value: master
-      effect: NoSchedule
-  containers:
-  - name: virt-device-plugin
-    image: virt-device-plugin
-    imagePullPolicy: IfNotPresent
-    command: [ "/usr/bin/virtdp", "-logtostderr", "-v", "10" ]
-    # command: [ "/bin/bash", "-c", "--" ]
-    args: [ "while true; do sleep 300000; done;" ]
-    #securityContext:
-        #privileged: true
-    volumeMounts:
-    - mountPath: /var/lib/kubelet/device-plugins/
-      name: devicesock
-      readOnly: false
-    - mountPath: /sys/class/net
-      name: net
-      readOnly: true
-  volumes:
-  - name: devicesock
-    hostPath:
-     # directory location on host
-     path: /var/lib/kubelet/device-plugins/
-  - name: net
-    hostPath:
-      path: /sys/class/net
-  hostNetwork: true
-  hostPID: true
-EOF
+curl https://gist.githubusercontent.com/dougbtv/8c63c9922e94178649306979ece58694/raw/b2dbbaaa99baeba25d88e4e0d8a8ea02ff1dad67/virtdp-daemonset.yaml | kubectl create -f -
 ```
 
 Go ahead and list the pods on your cluster, we'll show which nodes they're running on...
 
 ```
-kubectl get pods -o wide
+kubectl get pods -o wide --all-namespaces
 ```
 
-You'll notice that there's a `NODE` value of `kube-master-1` for the `virt-device-plugin`. This means that our device plugin is only running on the master, and is only aware of hardware that's on the master.
+### B3. Inspecting the discovered devices from the device plugin
 
-### B4. Inspecting the discovered devices from the device plugin
-
-Let's look at the logs of that pod...
+Let's look at the logs of that pod on a node...
 
 ```
-kubectl logs virt-device-plugin
+kubectl logs $(kubectl get pods -o wide --all-namespaces | grep kube-virt-device-plugin | grep -i node | head -n1 | awk '{print $2}') --namespace=kube-system
 ```
 
-Look near the bottom of the logs for a line that reads `ListAndWatch` -- you'll see it picked up on two devices for us. Those devices will match what we see in `/sys/class/net`. Let's go ahead and list that for us, too.
-
-```
-ls -lathr /sys/class/net/
-```
-
-You'll notice that the PCI address in the `ListAndWatch` section matches the `eth1` listed above. In this case the `virt-network-device-plugin` has logic that says "Hey, by the way -- don't pick the default interface here".
-
-Before you spin up this pod in this next command -- let's note that it *does not* have a `NodeSelector` -- this means that it could be scheduled to any node. Now with that in mind...
-
-### B5. Creating a pod to use the device plugin
+### B4. Creating a pod to use the device plugin
 
 Let's spin up a pod...
 
@@ -419,7 +347,7 @@ spec:
 EOF
 ```
 
-### B6. Inspecting the results of the pod using the device
+### B5. Inspecting the results of the pod using the device
 
 Now we can exec in the pod and see it has plumbed our virtual device into the pod!
 
@@ -435,7 +363,7 @@ And check out that it's running on the proper node:
 kubectl get pods -o wide
 ```
 
-### B7. Review the resources available on the node
+### B6. Review the resources available on the node
 
 And you can find out more about the resources used with:
 
@@ -443,7 +371,7 @@ And you can find out more about the resources used with:
 kubectl describe node $HOSTNAME | less
 ```
 
-### B9. Create a pod that doesn't have a way to get scheduled.
+### B7. Create a pod that doesn't have a way to get scheduled.
 
 If you create a secondary pod, you can also see that it won't get assigned, and will remain in a pending status:
 
@@ -554,7 +482,7 @@ sudo -i
 Now, we'll move into our clone of the userspace CNI
 
 ```
-cd src/go/src/github.com/Billy99/user-space-net-plugin/
+cd src/go/src/github.com/intel/userspace-cni-network-plugin/
 ```
 
 Here we're going to use a helper script that is used during CNI development. Let's call it and get a container going.
@@ -565,7 +493,7 @@ Here we're going to use a helper script that is used during CNI development. Let
 export CNI_PATH=/opt/cni/bin; \
   export NETCONFPATH=/etc/alternate.net.d/; \
   export GOPATH=/root/src/go/; \
-  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
+  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.4.0
 ```
 
 *NO PROMPT?* This will create a bunch of output -- go ahead an hit `enter` a few times to get a prompt.
@@ -605,7 +533,7 @@ Go ahead and copy that into your paste buffer.
 Make sure you're root, and in the proper directory:
 
 ```
-cd src/go/src/github.com/Billy99/user-space-net-plugin/
+cd src/go/src/github.com/intel/userspace-cni-network-plugin/
 ```
 
 Then create the container same as we did before:
@@ -614,7 +542,7 @@ Then create the container same as we did before:
 export CNI_PATH=/opt/cni/bin; \
   export NETCONFPATH=/etc/alternate.net.d/; \
   export GOPATH=/root/src/go/; \
-  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.2.0
+  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.4.0
 ```
 
 Now get the IPs for each of the containers you have running in open windows, you can do so with:
