@@ -408,6 +408,7 @@ In this tutorial we will run the Userspace CNI. The Userspace CNI is used to add
 
 The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). This tutorial uses VPP as the vSwitch (see configuration below, Line 6), but Userspace CNI also supports OVS-DPDK.
 
+In this tutorial, we will create the following:
 ![VPP Demo](images/Userspace_CNI_Demo.png)
 
 On the host, the configuration for the Userspace CNI is as follows:
@@ -448,6 +449,7 @@ On the host, the configuration for the Userspace CNI is as follows:
 33 }
 ```
 
+
 Based on this configuration data, the Userspace CNI will perform the following steps for each container that is spun up:
 * Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). {Lines 7, 9-12}
 * Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge. {Lines 8,13-15}
@@ -456,7 +458,7 @@ Based on this configuration data, the Userspace CNI will perform the following s
 
 On container boot, an application in the container (vpp-app) will read the DB and create a memif interface in the container and add the IP settings to interface.
 
-NOTE: This tutorial is using a local script to call and exercise the Userspace CNI. In a deployment scenario, the Userspace CNI is intended to run with Multus, which can add multiple interfaces into a container. Multus will handle adding the 'default network' in addition to the userspace interface shown here. The Userspace CNI currently works with Multus and Kubernetes but was omitted here for simplicity and keep the focus on Userspace CNI.
+**NOTE:** This tutorial is using a local script to call and exercise the Userspace CNI. In a deployment scenario, the Userspace CNI is intended to run with Multus, which can add multiple interfaces into a container. Multus will handle adding the 'default network' in addition to the userspace interface shown here. The Userspace CNI currently works with Multus and Kubernetes but was omitted here for simplicity and keep the focus on Userspace CNI.
 
 ### Core Concepts
 
@@ -469,51 +471,44 @@ NOTE: This tutorial is using a local script to call and exercise the Userspace C
     - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
     - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the decriptor rings and packet buffers back by shared memory.
 
+
 ### C1. Setup workspace
 
-First up, *let's open up two SSH connections to the same host*, use the backup SSH connection string -- or, even better -- If you want, use `tmux` to make a new screen (if you created a new screen in the beginning with `ctrl+b, c` then you can use `ctrl+b, p` to go to the preview screen, and keep using that to switch between them).
-
-For this tutorial, we're going to act as root. Let's get that going.
+For this tutorial, we are going to continue using the terminal window from the previous examples. However, for this tutorial we are going to act as root. Let's get that going.
 
 ```
 sudo -i
 ```
 
-Now, we'll move into our clone of the userspace CNI
+### C2. Inspect host
 
-```
-cd src/go/src/github.com/intel/userspace-cni-network-plugin/
-```
-
-Here we're going to use a helper script that is used during CNI development. Let's call it and get a container going.
-
-### C2. Create the first container using userspace CNI
-
-```
-export CNI_PATH=/opt/cni/bin; \
-  export NETCONFPATH=/etc/alternate.net.d/; \
-  export GOPATH=/root/src/go/; \
-  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.4.0
-```
-
-*NO PROMPT?* This will create a bunch of output -- go ahead an hit `enter` a few times to get a prompt.
-
-*NOTE*: Having trouble? If you run into a situation where you have an error reported, try running the `vppctl show interface addr` command if an IP address is shown, you're good to go. If not -- you should just type `exit` to exit the container, and then run the above `vpp-docker-run.sh` script again.
-
-```
-[root@c25985f1fe78 /]# ERROR returned: failed to read Remote config: <nil>
-[root@c25985f1fe78 /]# vppctl show interface addr
-local0 (dn):
-```
-
-### C3. Use `vppctl` to show interfaces and properties
-
-Cool, now you're in a running container -- let's list what we're seeing with `vppctl`.
-
+Before the containers are started, lets look at the host. VPP is currently running on the host. Let's run a few commands and get the current state.
 ```
 vppctl show interface
 vppctl show mode
-vppctl show memif
+```
+
+As we see, not much here. Once the containers are started, there should two `memif` interfaces, one for each container.
+
+
+### C3. Start two containers using userspace CNI
+
+Here we're going to use a helper script that will start each container one at a time.
+```
+curl https://tinyurl.com/ons2018-vppDemo-sh | bash
+```
+
+What is this script doing? It is calling `docker run ... docker.io/bmcfall/vpp-centos-userspace-cni:0.4.0` with lots of additional parameters. These parameters are used to map hugepages into the container, volume mount two directories to share socket files and DB files, name our containers `vppDemo_1` and `vppDemo_2`, etc. The script also monitors the `memif` interfaces on the host and makes sure they come up properly.
+
+
+### C4. Use `vppctl` to show interfaces and properties of `vppDemo_1`
+
+Cool, now we should have two containers running. Let's examine the configuration of the first container with `vppctl` commands.
+
+```
+docker exec vppDemo_1 vppctl show interface
+docker exec vppDemo_1 vppctl show mode
+docker exec vppDemo_1 vppctl show memif
 ```
 
 You'll see that you have a `memif` available here.
@@ -521,45 +516,46 @@ You'll see that you have a `memif` available here.
 Let's show the IP address here:
 
 ```
-vppctl show interface addr
+docker exec vppDemo_1 vppctl show interface addr
 ```
 
-Go ahead and copy that into your paste buffer.
+We will need to remember that IP address, so go ahead and copy that into your paste buffer. 
 
-### C4. Create secondary container
 
-**IN THE SECOND SCREEN** -- Now, let's create another container -- use the same method as before.
+### C5. Use `vppctl` to show interfaces and properties of `vppDemo_2`
 
-Make sure you're root, and in the proper directory:
-
-```
-cd src/go/src/github.com/intel/userspace-cni-network-plugin/
-```
-
-Then create the container same as we did before:
+Repeat the same commands for the second container.
 
 ```
-export CNI_PATH=/opt/cni/bin; \
-  export NETCONFPATH=/etc/alternate.net.d/; \
-  export GOPATH=/root/src/go/; \
-  ./scripts/vpp-docker-run.sh -it --privileged docker.io/bmcfall/vpp-centos-userspace-cni:0.4.0
+docker exec vppDemo_2 vppctl show interface
+docker exec vppDemo_2 vppctl show mode
+docker exec vppDemo_2 vppctl show memif
+docker exec vppDemo_2 vppctl show interface addr
 ```
 
-Now get the IPs for each of the containers you have running in open windows, you can do so with:
+### C6. Revisit host
 
+Now that the containers are up, lets look at the host again.
 ```
-vppctl show interface addr
+vppctl show interface
+vppctl show mode
 ```
 
-Get them for both containers, and then ping one from another. Note that we're using `vppctl ping ...` because we're in userspace -- we can't just use plain old `ping`.
+So we can see that the Userspace CNI created two `memif` interfaces on the host and added them to a local bridge.
 
-### C5. Ping between the two containers
 
-Now let's see if we can get a ping between them:
+### C7. Ping between the two containers
 
+Now let's see if we can get a ping between them. In the container, VPP owns the `memif` interface, not the kernel. Therefore the `ping` needs to be initiated from VPP.
 ```
-vppctl ping PASTE_THE_COPIED_IP_HERE repeat 5
+docker exec vppDemo_2 vppctl ping PASTE_THE_COPIED_IP_HERE repeat 5
 ```
+
+On the host, if we show the interfaces again, we see tx and rx counts have incremented.
+```
+vppctl show interface
+```
+
 
 ## Do it yourself!
 
