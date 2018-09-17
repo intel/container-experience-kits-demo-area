@@ -408,8 +408,11 @@ In this tutorial we will run the Userspace CNI. The Userspace CNI is used to add
 
 The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). This tutorial uses VPP as the vSwitch (see configuration below, Line 6), but Userspace CNI also supports OVS-DPDK.
 
+
 In this tutorial, we will create the following:
+
 ![VPP Demo](images/Userspace_CNI_Demo.png)
+
 
 On the host, the configuration for the Userspace CNI is as follows:
 ```
