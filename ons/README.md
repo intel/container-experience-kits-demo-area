@@ -417,47 +417,47 @@ In this tutorial, we will create the following:
 On the host, the configuration for the Userspace CNI is as follows:
 ```
 # cat /etc/alternate.net.d/90-userspace.conf
-01 {
-02        "cniVersion": "0.3.1",
-03        "type": "userspace",
-04        "name": "memif-network",
-05        "host": {
-06                "engine": "vpp",
-07                "iftype": "memif",
-08                "netType": "bridge",
-09                "memif": {
-10                        "role": "master",
-11                        "mode": "ethernet"
-12                },
-13                "bridge": {
-14                        "bridgeId": 4
-15                }
-16        },
-17        "container": {
-18                "engine": "vpp",
-19                "iftype": "memif",
-20                "netType": "interface",
-21                "memif": {
-22                        "role": "slave",
-23                        "mode": "ethernet"
-24                }
-25        },
-26        "ipam": {
-27                "type": "host-local",
-28                "subnet": "192.168.210.0/24",
-29                "routes": [
-30                        { "dst": "0.0.0.0/0" }
-31                ]
-32        }
-33 }
+{
+       "cniVersion": "0.3.1",
+       "type": "userspace",
+       "name": "memif-network",
+       "host": {
+               "engine": "vpp",
+               "iftype": "memif",
+               "netType": "bridge",
+               "memif": {
+                       "role": "master",
+                       "mode": "ethernet"
+               },
+               "bridge": {
+                       "bridgeId": 4
+               }
+       },
+       "container": {
+               "engine": "vpp",
+               "iftype": "memif",
+               "netType": "interface",
+               "memif": {
+                       "role": "slave",
+                       "mode": "ethernet"
+               }
+       },
+       "ipam": {
+               "type": "host-local",
+               "subnet": "192.168.210.0/24",
+               "routes": [
+                       { "dst": "0.0.0.0/0" }
+               ]
+       }
+}
 ```
 
 
 Based on this configuration data, the Userspace CNI will perform the following steps for each container that is spun up:
-* Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). {Lines 7, 9-12}
-* Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge. {Lines 8,13-15}
-* Call the IPAM CNI to retrieve the container IP values. {Lines 26-32}
-* Write the container configuration and IPAM results structure to DB. {Lines 17-25, plus results from previous IPAM call}
+* Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). 
+* Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge.
+* Call the IPAM CNI to retrieve the container IP values.
+* Write the container configuration and IPAM results structure to DB.
 
 On container boot, an application in the container (vpp-app) will read the DB and create a memif interface in the container and add the IP settings to interface.
 
