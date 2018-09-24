@@ -1,8 +1,0 @@
----
-git_repos:
-  MULTUS_CNI_BRANCH: b2d67c8909b940ebf8eae5e87a4ac8897e3ef9d3
-  MULTUS_CNI_REPO: http://github.com/Intel-Corp/multus-cni
-  CMK_BRANCH: 476b0fd90a77091e97cfc5c19312094c175b6603
-  CMK_REPO: http://github.com/Intel-Corp/CPU-Manager-for-Kubernetes
-  NFD_BRANCH: 41da99a4359939950b7a05e8e73eeb44ebb63dd7
-  NFD_REPO: https://github.com/kubernetes-incubator/node-feature-discovery
