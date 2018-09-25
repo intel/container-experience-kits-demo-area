@@ -21,9 +21,9 @@ Table of Contents
    * [Baremetal container model](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#baremetal-container-model)
    * [NFV Features in Kubernetes](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#introduction)
    * Kubernetes Network
-      * [Multus CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#multus-cni)
-      * [Userspace CNI](https://github.com/intel/userspace-cni-network-plugin/#userspace-cni-plugin)
-      * [SRIOV Network Device plugin](https://github.com/intel/sriov-network-device-plugin#sriov-network-device-plugin-for-kubernetes)
+      * [Multus CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/multus#multus-cni-plugin)
+      * [Userspace CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/userspace-cni#userspace-cni)
+      * [SRIOV Network Device plugin](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/sriov-network-dp#sr-iov-network-device-plugin)
         * [SRIOV CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
    * Kubernetes Compute(Will not be covered in the ONS Summit)
       * [CPU Manager for K8s](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
