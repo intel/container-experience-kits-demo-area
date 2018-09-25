@@ -23,8 +23,8 @@ Table of Contents
    * Kubernetes Network
       * [Multus CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/multus#multus-cni-plugin)
       * [Userspace CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/userspace-cni#userspace-cni)
-      * [SRIOV Network Device plugin](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/sriov-network-dp#sr-iov-network-device-plugin)
-        * [SRIOV CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
+      * [SRIOV Network Device plugin(Emulated)](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/sriov-network-dp#sr-iov-network-device-plugin)
+        * [SRIOV CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/docs/nfv-features-in-k8s#sriov---cni-and-dpdk-sriov-cni)
    * Kubernetes Compute(Will not be covered in the ONS Summit)
       * [CPU Manager for K8s](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
       * [NUMA Manager](https://github.com/kubernetes/community/pull/1680)
