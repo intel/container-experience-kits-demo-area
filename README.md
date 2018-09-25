@@ -22,13 +22,13 @@ Table of Contents
    * [NFV Features in Kubernetes](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#introduction)
    * Kubernetes Network
       * [Multus CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#multus-cni)
-      * [Userspace CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#Userspace-cni)
-      * [SRIOV Network Device plugin](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
+      * [Userspace CNI](https://github.com/intel/userspace-cni-network-plugin/#userspace-cni-plugin)
+      * [SRIOV Network Device plugin](https://github.com/intel/sriov-network-device-plugin#sriov-network-device-plugin-for-kubernetes)
         * [SRIOV CNI](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#sriov-cni)
    * Kubernetes Compute(Will not be covered in the ONS Summit)
       * [CPU Manager for K8s](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
-      * [NUMA Manager](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
-      * [QAT](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
+      * [NUMA Manager](https://github.com/kubernetes/community/pull/1680)
+      * [QAT](https://github.com/intel/intel-device-plugins-for-kubernetes/blob/master/cmd/qat_plugin/README.md#build-and-test-intel-quickassist-technology-qat-device-plugin-for-kubernetes)
       * [Node features Discovery](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#node-feature-discovery)
       * [Performance Benchmarking Result](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#performance-figures)
    * [Container Exp kits details](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/exp-kits/README.md#introduction)
@@ -40,7 +40,7 @@ Table of Contents
 If you have any questions about, feedback on Intel's container exp kit:
 
 - Read [Containers Experience Kits - will be updated soon](https://networkbuilders.intel.com/network-technologies/container-experience-kits).
-- Invite yourself to the <a href="https://intel-corp.herokuapp.com/" target="_blank"> #intel-dnsg-slack</a> slack channel.
+- Invite yourself to the <a href="https://intel-corp.herokuapp.com/" target="_blank"> #intel-corp-slack</a> slack channel.
 - Ask a question on the <a href="https://intel-corp-team.slack.com/messages/C4C5RSEER"> #general-discussion</a> slack channel.
 - Need more assistant<a href="mailto:kuralamudhan.ramakrishnan@intel.com"> email us</a>
 - Feel free to <a href="https://github.com/intel/container-experience-kits-demo-area/issues/new">file an issue.</a>
@@ -57,8 +57,9 @@ Please fill in the Questions/feedback -  [google-form](https://goo.gl/forms/iMAv
     * [Enhanced Platform Awareness Features in Kubernetes ](https://builders.intel.com/docs/networkbuilders/enhanced-platform-awareness-in-kubernetes-application-note.pdf)
 * Project github pages
     * [Multus](https://github.com/Intel-Corp/multus-cni)
-    
-    * [SRIOV - DPDK CNI](https://github.com/Intel-Corp/sriov-cni)
+    * [Userspace CNI](https://github.com/intel/userspace-cni-network-plugin/)
+    * [SRIOV Network Device Plugin](https://github.com/intel/sriov-network-device-plugin)
+    * [SRIOV - DPDK CNI](https://github.com/intel/sriov-cni)
     * [Node Feature Discovery](https://github.com/kubernetes-incubator/node-feature-discovery)
     * [CPU Manager for Kubernetes](https://github.com/Intel-Corp/CPU-Manager-for-Kubernetes)
 
