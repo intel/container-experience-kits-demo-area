@@ -498,7 +498,7 @@ As we see, not much here. Once the containers are started, there should two `mem
 
 Here we're going to use a helper script that will start each container one at a time.
 ```
-curl https://tinyurl.com/ons2018-vppDemo-sh | bash
+curl -L https://tinyurl.com/ons2018-vppDemo-sh | bash
 ```
 
 What is this script doing? It is calling `docker run ... docker.io/bmcfall/vpp-centos-userspace-cni:0.4.0` with lots of additional parameters. These parameters are used to map hugepages into the container, volume mount two directories to share socket files and DB files, name our containers `vppDemo_1` and `vppDemo_2`, etc. The script also monitors the `memif` interfaces on the host and makes sure they come up properly.
