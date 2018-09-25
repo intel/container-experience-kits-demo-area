@@ -4,10 +4,10 @@ Thanks for joining us at ONS Europe 2018 to try out some NFV features in Kuberne
 
 Agenda:
 
-* Workstation setup
-* Multus CNI
-* SR-IOV Device Plugin (emulated)
-* Userspace CNI
+* [Workstation setup](#workstation-setup)
+* [Multus CNI](#multus-cni)
+* [SR-IOV Network Device Plugin (emulated)](#sr-iov-network-device-plugin)
+* [Userspace CNI](#userspace-cni)
 * Additional & Reference Materials
 
 ## Requirements
@@ -248,7 +248,7 @@ Now we can see that there are three interfaces!
 * `eth0` attached to our default network (flannel)
 * `net1` attached to our macvlan network we just created.
 
-## SR-IOV Device Plugin
+## SR-IOV Network Device Plugin
 
 We're going to explore the use of a device plugin for 
 
@@ -565,7 +565,7 @@ vppctl show interface
 You can create this own lab environment on your own -- we have instructions on how to create it available in [kube-ansible](https://github.com/redhat-nfvpe/kube-ansible/tree/dev/ons-tutorial/contrib) -- a suite of ansible playbooks to create a Kubernetes lab environment, and with steps that were used to create the lab which you've been using for this tutorial.
 
 ## Additional & Reference Materials
-
-```
-[ stub ]
-```
+    * [Multus](https://github.com/Intel-Corp/multus-cni)
+    * [Userspace CNI](https://github.com/intel/userspace-cni-network-plugin/)
+    * [SRIOV Network Device Plugin](https://github.com/intel/sriov-network-device-plugin)
+    * [SRIOV - DPDK CNI](https://github.com/intel/sriov-cni)
