@@ -10,100 +10,206 @@
 - Figure above shows the network control flow with Multus. 
 - When Multus is invoked, it recovers pod annotations related to Multus, in turn, then it uses these annotations to recover a Kubernetes custom resource definition (CRD), which is an object that informs which plugins to invoke and the configuration needing to be passed to them. The order of plugin invocation is important as is the identity of the master plugin.
 - In the figure, we see the benefit in a virtual firewall (vFW) use case.
--- By using the [SRIOV CNI plugin](https://github.com/Intel-Corp/sriov-cni) in DPDK mode, the vFW can get full-speed line rate packet interfaces to the networks on which it is expected to perform its function. Additionally, there exists the management and control eth0 interface, which is available for control of the vFW itself and also possibly other functions, such as logging whose job may be to scrape the vFW logs and export via the management network interface to a centralized logging service. 
+-- By using the [SRIOV CNI plugin](https://github.com/intel/sriov-cni) in DPDK mode, the vFW can get full-speed line rate packet interfaces to the networks on which it is expected to perform its function. Additionally, there exists the management and control eth0 interface, which is available for control of the vFW itself and also possibly other functions, such as logging whose job may be to scrape the vFW logs and export via the management network interface to a centralized logging service. 
 
-## Demo Installation with ansible script
-- Multus is installed by default in the `allinone.yml` as explained in the [Deploying Kubernetes without Proxy](https://github.com/intel/container-experience-kits-demo-area/tree/master/software#deploying-kubernetes-without-proxy)
+### Core Concepts
 
-### Example usage
-#### Creating “Network” third party resource in kubernetes
+* CRDs - Custom Resource Definitions
+    - How we extend the Kubernetes API, and define custom configurations for each network/NIC we attach to our pods
+* "Default network"
+    - Our "default network" is the configuration that we use that is the default NIC attached to each and every pod in our cluster, typically this is used for pod-to-pod communication.
 
-Multus is compatible to work with both CRD/TPR. Both CRD/TPR based network object api self link is same.
+### A1. Inspecting the Multus daemonset-style installation
 
-#### CRD based Network objects
+Inspect your work area, firstly, list your home directory, You'll see there's a `./multus-cni`. Move into that directory
 
-1. Create a CRD “crdnetwork.yaml” for the network object as shown below
 ```
- # cd ~/demo/workspace/multus/
- # sudo kubectl create -f ./crd/crdnetwork.yaml
- customresourcedefinition "networks.kubernetes.com" created
-```
-2. create the custom resource definition network objects
-```
-# sudo kubectl create -f ./network-obj/flannel-network.yaml
-network "flannel-conf" created
-# sudo kubectl create -f ./network-obj/ptp-network.yaml
-network "ptp-conf" created
-```
-3. Display the custom network object as below
-```
-# sudo kubectl get networks
-NAME           AGE
-flannel-conf   3m
-ptp-conf       3m
+ls -l
+cd multus-cni
 ```
 
-#### Configuring Pod to use the CDR Network objects
-1. Look at the pod netwok annotation field. In this case flannel-conf network object act as the primary network. 
+Typically, by default we setup using the "quick start guide" method, which deploys a YAML file with a daemonset and some CRDs.
+
+Let's look at that file.
+
 ```
-# cat pod/pod-multi-network.yaml
+cat images/multus-daemonset.yml
+```
+
+Taking a look around, you'll see this is comprised of a few parts -- each between the `---` YAML delimiter.
+
+* A CRD (Custom Resource Definition)
+    - This defines how we'll extend the Kubernetes API with our custom configurations for how we'll setup each NIC attached to our pods.
+* A cluster role, cluster role binding and service account
+    - to give Multus permissions to access the Kubernetes API
+* A config map
+    - Currently unused, but to allow you to customize how Multus is configured
+* A Daemonset
+    - A way to define a pod that runs on each host in our cluster, in this case it is used to place our Multus binary and flat file configuration on each machine in the cluster.
+
+### A2. Install Multus and the default network
+
+Let's take this for a spin -- we'll deploy both the Multus Daemonset, and Flannel, which will be used for our "default network" -- 
+
+```
+cat ./images/{multus-daemonset.yml,flannel-daemonset.yml} | kubectl apply -f -
+```
+
+This is going to spin up a number of pods, let's watch it come up...
+
+```
+kubectl get pods --all-namespaces -w
+```
+
+Or if you don't like that format, you can use `watch` itself...
+
+```
+watch -n1 kubectl get pods --all-namespaces -o wide
+```
+
+### A3. Verify the installation of Multus & default network
+
+Next, we can check that state of our nodes, once everything is running we should see that `STATUS` changes from `NotReady` to `Ready` -- 
+
+```
+kubectl get nodes
+```
+
+This state is determined by the Kubelet by looking for the precence of a CNI configuration in the CNI configuration directory -- by default this is `/etc/cni/net.d`, and this holds true for our configuration as well.
+
+Let's take a look there.
+
+```
+cat /etc/cni/net.d/70-multus.conf
+```
+
+Looking at this configuration file, you'll see that there's a number of things configured here, for example:
+
+* `delegates`: This defines our default network, in this case we "delegate" the work for the default network to Flannel, which we use in this scenario as a pod-to-pod network.
+* `type`: This is a required CNI configuration field, and in each place that you see `type` that means that CNI is going to call the binary (by default in `/opt/cni/bin`) of the value of `type`, in this case the top level `type` is set to `multus` which is what we want to be called first -- then in the `delegates` section we have it the `type` set to `flannel`, in this case Multus is what calls this binary, and it will be the first binary called and always attached @ `eth0`.
+
+### A4. Run a pod without additional interfaces
+
+Let's start a "vanilla" pod, this is kind of the control in our experiment here.
+
+```
+cat <<EOF | kubectl create -f -
 apiVersion: v1
 kind: Pod
 metadata:
-  name: multus-multi-net-poc
-  annotations:
-    networks: '[
-        { "name": "flannel-conf" },
-        { "name": "ptp-conf"}
-    ]'
-spec:  # specification of the pod's contents
+  name: vanillapod
+spec:
   containers:
-  - name: multus-multi-net-poc
-    image: "busybox"
-    command: ["top"]
-    stdin: true
-    tty: true
-```
-3.	Create Multiple network based pod from the master node
-```
-#sudo kubectl create -f ./pod/pod-multi-network.yaml
-pod "multus-multi-net-poc" created
-```
-4.	Get the details of the running pod from the master
-```
-$ sudo kubectl get pod multus-multi-net-poc
-NAME                   READY     STATUS    RESTARTS   AGE
-multus-multi-net-poc   1/1       Running   0          2m
-```
-### Verifying Pod network
-1.	Run “ifconfig” command inside the pod, `eth0` interfacce is from `flannel-conf`  and `net0` is from `ptp-conf` Network object.
-```
-$ sudo kubectl exec -it multus-multi-net-poc -- ifconfig
-eth0      Link encap:Ethernet  HWaddr 0A:58:0A:F4:00:04
-          inet addr:10.244.0.4  Bcast:0.0.0.0  Mask:255.255.255.0
-          inet6 addr: fe80::4c2b:68ff:fee8:ad3d/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1450  Metric:1
-          RX packets:11 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:9 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0
-          RX bytes:870 (870.0 B)  TX bytes:738 (738.0 B)
-
-lo        Link encap:Local Loopback
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:65536  Metric:1
-          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1
-          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
-
-net0      Link encap:Ethernet  HWaddr 0A:58:0A:A8:01:0B
-          inet addr:10.168.1.11  Bcast:0.0.0.0  Mask:255.255.255.0
-          inet6 addr: fe80::e4d6:f8ff:fed6:2300/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:8 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0
-          RX bytes:648 (648.0 B)  TX bytes:648 (648.0 B)
+  - name: vanillapod
+    command: ["/bin/bash", "-c", "sleep 2000000000000"]
+    image: dougbtv/centos-network
+EOF
 ```
 
+Watch that come up...
+
+```
+kubectl get pods -w
+```
+
+Once it shows `Running` in the `STATUS`, let's execute a command in that pod...
+
+```
+kubectl exec -it vanillapod -- ip -d a
+```
+
+Take a look at the output, you'll see two interfaces -- one doesn't count! The loopback! And you'll also see a `eth0` -- this one is attached to the Flannel network. In this case, it's in a `10.244.0.0/8` address.
+
+### A5. Create a new CNI configuration stored as a custom resource
+
+Now, let's setup a custom network we'll attach as a second interface to a different pod.
+
+```
+cat <<EOF | kubectl create -f -
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-conf
+spec: 
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.1.0/24",
+        "rangeStart": "192.168.1.200",
+        "rangeEnd": "192.168.1.216",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+      }
+    }'
+EOF
+```
+
+What did we just do here? Remember how we looked at the `/etc/cni/net.d/70-multus.conf` -- that's a CNI configuration file. In that case we configured Multus itself. But, since Multus is a "meta plugin" and it calls other plugins, we're creating another different CNI plugin. In this case we created a configuration for using the `macvlan` plugin. 
+
+Where does this get stored? You can look for it using the command line (or the Kubernetes API, as well)
+
+Let's take a look:
+
+```
+kubectl get crds
+```
+
+Here we can see the over-arching namespace under which these configurations live, in this case our namespace is called `network-attachment-definitions.k8s.cni.cncf.io`. 
+
+You can take a look and see what's available for custom resources created under that umbrella.
+
+You can do that with:
+
+```
+kubectl get network-attachment-definitions.k8s.cni.cncf.io
+```
+
+Here we can see that `macvlan-conf` has been created. That's the name we gave it above. 
+
+We can implement an attachment to this `macvlan-conf` configured network by referencing that name in an annotation in another pod. Let's create it. Take a look closely here and see that there is an `annotations` section -- in this case we call out the namespace under which it lives, and then the value of the name of the custom resource we just created, which reads as: `k8s.v1.cni.cncf.io/networks: macvlan-conf`
+
+### A6. Create a pod with an additional interface
+
+Let's move forward and create that pod:
+
+```
+cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multipod
+  annotations:
+    k8s.v1.cni.cncf.io/networks: macvlan-conf
+spec:
+  containers:
+  - name: multipod
+    command: ["/bin/bash", "-c", "sleep 2000000000000"]
+    image: dougbtv/centos-network
+EOF
+```
+
+Watch the pod come up again...
+
+```
+kubectl get pods -w
+```
+
+### A7. Verify the interfaces available in the pod
+
+And when it comes up, now we can take a look at the interfaces that were created and attached to that pod:
+
+```
+kubectl exec -it multipod -- ip -d a
+```
+
+Now we can see that there are three interfaces!
+
+* A loopback
+* `eth0` attached to our default network (flannel)
+* `net1` attached to our macvlan network we just created.
