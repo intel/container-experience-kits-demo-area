@@ -14,6 +14,15 @@ Agenda:
 
 All you need is an SSH client. Please feel free to use whatever you have. If you'd like, you can use a [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en).
 
+## Get your URLS
+
+We will give each person a number.
+
+[Server A](https://markdownshare.com/view/40f13f03-1c5b-4a0a-8208-ac5f28ea0fd9)
+[Server B](https://markdownshare.com/view/c23a3180-3ec5-4972-9260-a5b290d1d1ab)
+
+
+
 ## Workstation setup
 
 Let's get setup to use our workstation! At each of your desks, you'll have a number. The speakers will provide you with a link to visit. Visit that link.
