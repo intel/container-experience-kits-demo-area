@@ -18,10 +18,6 @@ The intended audience of this demo is system architects, developers and engineer
 
 This demo kit identifies those scripts and the hardware and software needed for correct operation. The summarizes the software configuration and data flows explored in this repo[link]. MULTUS, NFD, and CMK are deployed in one node using the Ansible scripts provided in this [link]. 
 
-**Using the USB stick you can install the Kubernetes with Mutlus, NFD and CMK in your laptop**
-
-**In order to overcome the hardware limitation during the demo, we provided the SRIOV - DPDK CNI features as a video demo here**
-
 ### Bare metal container Set up details
 
 Kubernetes pods, testpmd in this case, can now take advantage of multiple network interfaces, bound by DPDK associated with SR-IOV physical functions (PFs) on the host for dedicated bi-directional data traffic, all while Flannel manages the primary pod network interface (eno2). CMK then provides deterministic performance by isolating cores and pinning high piority (testpmd) workloads to those isolated cores.
