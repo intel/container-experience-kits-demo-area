@@ -7,7 +7,7 @@ The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (
 
 In this tutorial, we will create the following:
 
-![VPP Demo](images/Userspace_CNI_Demo.png)
+![VPP Demo](../../demo/images/Userspace_CNI_Demo.png)
 
 
 On the host, the configuration for the Userspace CNI is as follows:
