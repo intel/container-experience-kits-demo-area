@@ -415,8 +415,22 @@ EOF
 
 In this tutorial we will run the Userspace CNI. The Userspace CNI is used to add userspace networking interfaces to a container. Userspace networking interfaces require special handling because the interfaces are not owned by the kernel, so they cannot be added to a container through normal namespace provisioning. Work needs to be done on the host to created the interface in the local vSwitch, and work needs to be performed in the container to consume the interface. Even though the userspace interfaces require special handling, they are desired because running outside the kernel allows for some software optimizations that produce higher throughput at the cost of higher CPU usage.
 
-The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). This tutorial uses VPP as the vSwitch (see configuration below, Line 6), but Userspace CNI also supports OVS-DPDK.
+The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (https://fd.io/), which are both opensource userspace projects based on DPDK (https://www.dpdk.org/). Below tutorials will introduce both scenarios.
 
+### Core Concepts
+
+![userspace cni concept](https://github.com/intel/userspace-cni-network-plugin/blob/master/doc/images/userspace-plugin.png?raw=true)
+
+* "Userspace networking"
+    - Typical packet processing on a linux distribution occurs in the kernel. With "userspace networking", packet processing occurs in software outside the kernel. Software techniques such as processing a batch of packets at a time, poll driven instead of interupt driven, and data/instruction cache optimization can produce higher data rates than pure kernel packet processing.
+* vhost-user
+    - vhost-user is a protocol that is used to setup virtqueues on top of shared memory between two userspace processes on the same host. The vhost user protocol consists of a control path and a data path. Once data path is established, packets in the shared memory can be shared between the two userspace processes via a fast zero-copy.
+    - In userspace networking, a vhost-user interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the virtual queues back by shared memory.
+* memif
+    - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
+    - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the descriptor rings and packet buffers back by shared memory.
+
+### VPP demo
 
 In this tutorial, we will create the following:
 
@@ -461,7 +475,6 @@ On the host, the configuration for the Userspace CNI is as follows:
 }
 ```
 
-
 Based on this configuration data, the Userspace CNI will perform the following steps for each container that is spun up:
 * Create a memif interface on the VPP instance on the host (which is a VM in this tutorial). 
 * Create a bridge (if it doesn't already exist) on the VPP instance on the host and add the newly created memif interface to the bridge.
@@ -471,18 +484,6 @@ Based on this configuration data, the Userspace CNI will perform the following s
 On container boot, an application in the container (vpp-app) will read the DB and create a memif interface in the container and add the IP settings to interface.
 
 **NOTE:** This tutorial is using a local script to call and exercise the Userspace CNI. In a deployment scenario, the Userspace CNI is intended to run with Multus, which can add multiple interfaces into a container. Multus will handle adding the 'default network' in addition to the userspace interface shown here. The Userspace CNI currently works with Multus and Kubernetes but was omitted here for simplicity and keep the focus on Userspace CNI.
-
-### Core Concepts
-
-* "Userspace networking"
-    - Typical packet processing on a linux distribution occurs in the kernel. With "userspace networking", packet processing occurs in software outside the kernel. Software techniques such as processing a batch of packets at a time, poll driven instead of interupt driven, and data/instruction cache optimization can produce higher data rates than pure kernel packet processing.
-* vhost-user
-    - vhost-user is a protocol that is used to setup virtqueues on top of shared memory between two userspace processes on the same host. The vhost user protocol consists of a control path and a data path. Once data path is established, packets in the shared memory can be shared between the two userspace processes via a fast zero-copy.
-    - In userspace networking, a vhost-user interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the virtual queues back by shared memory.
-* memif
-    - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
-    - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the decriptor rings and packet buffers back by shared memory.
-
 
 ### C1. Setup workspace
 
@@ -568,6 +569,179 @@ On the host, if we show the interfaces again, we see tx and rx counts have incre
 vppctl show interface
 ```
 
+### OVS-DPDK demo
+
+In this tutorial we will create a new pod with two virtio_user interafaces and we will transmit some traffic between them.
+
+### D1. Network attachment definition
+
+Your kubernetes cluster has some multus network attachment definitions created from previous tutorials:
+```
+[centos@kube-master-1 ~]$ kubectl get net-attach-def
+NAME            AGE
+flannel-conf    17h
+macvlan-conf    17h
+virt-net1       16h
+```
+
+We will now add new definition for `userspace-ovs` - skip it if it's already created:
+```
+[centos@kube-master-1 ~]$ vi userspace-net-ovs-no-ipam.yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: userspace-ovs
+spec:
+  config: '{
+    "cniVersion": "0.3.0",
+    "type": "userspace",
+    "LogLevel": "debug",
+    "LogFile": "/var/log/userspace.log",
+    "host": {
+      "engine": "ovs-dpdk",
+      "iftype": "vhostuser"
+    }
+  }'
+```
+
+Yes, this is the same multus configuration syntax we used in previous tutorials.
+
+What changed is `engine: ovs-dpdk` and `iftype: vhostuser` - let's add it now:
+
+```
+[centos@kube-master-1 ~]$ kubectl create -f userspace-net-ovs-no-ipam.yaml
+[centos@kube-master-1 ~]$ kubectl get net-attach-def
+NAME            AGE
+flannel-conf    17h
+macvlan-conf    17h
+virt-net1       16h
+userspace-ovs   20s
+```
+
+### D2. Dockerfile
+
+Before we will create our pod we need to provide a docker container image with DPDK installed - let's build it now:
+```
+[centos@kube-master-1 ~]$ vi Dockerfile
+FROM ubuntu:bionic
+RUN apt-get update && apt-get install -y dpdk;
+ENTRYPOINT ["bash"]
+
+[centos@kube-master-1 ~]$ docker build -t ubuntu-dpdk --network host .
+```
+### D3. Pod
+
+We are now ready to create our pod with two userspace interfaces - let's create below specification:
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-vhost-example
+  annotations:
+    k8s.v1.cni.cncf.io/networks: userspace-ovs, userspace-ovs
+spec:
+  containers:
+  - name: multi-vhost-example
+    image: ubuntu-dpdk
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: true
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /vhu/
+      name: socket
+    - mountPath: /dev/hugepages
+      name: hugepage
+    resources:
+      requests:
+        memory: 2Gi
+      limits:
+        hugepages-1Gi: 2Gi
+    command: ["sleep", "infinity"]
+  volumes:
+  - name: socket
+    hostPath:
+      path: /var/lib/cni/vhostuser/
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
+  securityContext:
+    runAsUser: 0
+  restartPolicy: Never
+```
+
+As you can see, we use annotations to assign two userspace interfaces.
+
+We also use kubernetes native hugepages to provide two of them for our pod.
+
+Let's create it now: `kubectl create -f pod-multi-vhost.yaml`
+
+### D4. Verify Openvswitch
+
+You should see new vhostuser ports added in OVS bridge now:
+```
+[centos@kube-master-1 ~]$ ovs-vsctl show
+    Bridge "br0"
+        Port "1f8b7066a427-net2"
+            Interface "1f8b7066a427-net2"
+                type: dpdkvhostuser
+        Port "br0"
+            Interface "br0"
+                type: internal
+        Port "1f8b7066a427-net1"
+            Interface "1f8b7066a427-net1"
+                type: dpdkvhostuser
+    ovs_version: "2.10.0"
+```
+
+### D5. Launch testpmd
+
+We will now jump inside the pod and transmit some traffic using DPDK testing tool `testpmd`:
+```
+[centos@kube-master-1 ~]$ kubectl exec -it multi-vhost-example bash
+
+[root@multi-vhost-example /]# export ID=$(/vhu/get-prefix.sh)
+[root@multi-vhost-example /]# testpmd \
+    -d librte_pmd_virtio.so.17.11 \
+    -l 2,3 \
+    --file-prefix=testpmd_ \
+    --vdev=net_virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 \
+    --vdev=net_virtio_user1,path=/vhu/${ID}/${ID:0:12}-net2 \
+    --no-pci \
+    -- \
+    --no-lsc-interrupt \
+    --auto-start \
+    --tx-first \
+    --stats-period 1 \
+    --disable-hw-vlan;
+```
+Depending on server's performance below testpmd results can vary:
+```
+Port statistics ====================================
+  ######################## NIC statistics for port 0  ########################
+  RX-packets: 8308640    RX-missed: 0          RX-bytes:  531752960
+  RX-errors: 0
+  RX-nombuf:  0
+  TX-packets: 8276896    TX-errors: 0          TX-bytes:  529721344
+ 
+  Throughput (since last show)
+  Rx-pps:      2126428
+  Tx-pps:      2123518
+  ############################################################################
+ 
+  ######################## NIC statistics for port 1  ########################
+  RX-packets: 8276896    RX-missed: 0          RX-bytes:  529721344
+  RX-errors: 0
+  RX-nombuf:  0
+  TX-packets: 8308672    TX-errors: 0          TX-bytes:  531755008
+ 
+  Throughput (since last show)
+  Rx-pps:      2123552
+  Tx-pps:      2126429
+  ############################################################################
+```
+Well done! You have successfully verified userspace cni plugin using OVS-DPDK interfaces.
 
 ## Do it yourself!
 
