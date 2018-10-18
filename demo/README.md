@@ -338,7 +338,7 @@ metadata:
   labels:
     env: test
   annotations:
-    k8s.v1.cni.cncf.io/networks: virt-net1
+    k8s.v1.cni.cncf.io/networks: virt-net
 spec:
   containers:
   - name: appcntr1
