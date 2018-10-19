@@ -124,6 +124,8 @@ kubectl exec -it vanillapod -- ip -d a
 
 Take a look at the output, you'll see two interfaces -- one doesn't count! The loopback! And you'll also see a `eth0` -- this one is attached to the Flannel network. In this case, it's in a `10.244.0.0/8` address.
 
+## Multus - mode 2 
+
 ### A5. Create a new CNI configuration stored as a custom resource
 
 All master nodes are tainted with `NoSchedule`, it means, you can't schedule the pods on the master, for the our workstation. Let us remove for our convenience. 
@@ -158,29 +160,29 @@ Co-ordinator will explain the each field now here.
 Now, let's setup a custom network we'll attach as a second interface to a different pod.
 
 ```
-cat 00-mode2-net.yaml
+$ cat 00-mode2-net.yaml
 apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
-  name: virt-network
-  annotations:
-    k8s.v1.cni.cncf.io/resourceName: kernel.org/virt
+  name: macvlan-net-attachment
 spec:
   config: '{
-        "type": "ehost-device",
-        "name": "virt-network",
-        "cniVersion": "0.3.0",
-        "ipam": {
-                "type": "host-local",
-                "subnet": "10.56.217.0/24",
-                "routes": [{
-                        "dst": "0.0.0.0/0"
-                }],
-                "gateway": "10.56.217.1"
-        }
-}'
-
-kubectl create -f 00-mode2-net.yaml
+      "cniVersion": "0.3.0",
+      "type": "macvlan",
+      "master": "eth0",
+      "mode": "bridge",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.1.0/24",
+        "rangeStart": "192.168.1.200",
+        "rangeEnd": "192.168.1.216",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+      }
+    }
+$ kubectl create -f 00-mode2-net.yaml
 ```
 
 What did we just do here? Remember how we looked at the `/etc/cni/net.d/10-flannel.conf` -- that's a CNI configuration file. In that case we configured Multus itself. But, since Multus is a "meta plugin" and it calls other plugins, we're creating another different CNI plugin. In this case we created a configuration for using the `macvlan` plugin. 
@@ -190,7 +192,7 @@ Where does this get stored? You can look for it using the command line (or the K
 Let's take a look:
 
 ```
-kubectl get crds
+$ kubectl get crds
 ```
 
 Here we can see the over-arching namespace under which these configurations live, in this case our namespace is called `network-attachment-definitions.k8s.cni.cncf.io`. 
@@ -200,37 +202,43 @@ You can take a look and see what's available for custom resources created under 
 You can do that with:
 
 ```
-kubectl get network-attachment-definitions.k8s.cni.cncf.io
+$ kubectl get network-attachment-definitions.k8s.cni.cncf.io
+```
+or
+
+```
+$ kubectl get net-attach-def
+$ kubectl get net-attach-def macvlan-net-attachment -o yaml
 ```
 
-Here we can see that `macvlan-conf` has been created. That's the name we gave it above. 
+Here we can see that `macvlan-net-attachment` has been created. That's the name we gave it above. 
 
-We can implement an attachment to this `macvlan-conf` configured network by referencing that name in an annotation in another pod. Let's create it. Take a look closely here and see that there is an `annotations` section -- in this case we call out the namespace under which it lives, and then the value of the name of the custom resource we just created, which reads as: `k8s.v1.cni.cncf.io/networks: macvlan-conf`
+We can implement an attachment to this `macvlan-net-attachment` configured network by referencing that name in an annotation in another pod. Let's create it. Take a look closely here and see that there is an `annotations` section -- in this case we call out the namespace under which it lives, and then the value of the name of the custom resource we just created, which reads as: `k8s.v1.cni.cncf.io/networks: macvlan-net-attachment`
 
 ### A6. Create a pod with an additional interface
 
 Let's move forward and create that pod:
 
 ```
-cat <<EOF | kubectl create -f -
+$ cat 11-multipod-1.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: multipod
+  name: multipod-1
   annotations:
-    k8s.v1.cni.cncf.io/networks: macvlan-conf
+    k8s.v1.cni.cncf.io/networks: macvlan-net-attachment
 spec:
   containers:
-  - name: multipod
+  - name: multipod-1
     command: ["/bin/bash", "-c", "sleep 2000000000000"]
     image: dougbtv/centos-network
-EOF
+$ kubectl create -f 11-multipod-1.yaml
 ```
 
 Watch the pod come up again...
 
 ```
-kubectl get pods -w
+$ kubectl get pods -w
 ```
 
 ### A7. Verify the interfaces available in the pod
@@ -238,7 +246,7 @@ kubectl get pods -w
 And when it comes up, now we can take a look at the interfaces that were created and attached to that pod:
 
 ```
-kubectl exec -it multipod -- ip -d a
+$ kubectl exec -it multipod -- ip -d a
 ```
 
 Now we can see that there are three interfaces!
@@ -246,6 +254,19 @@ Now we can see that there are three interfaces!
 * A loopback
 * `eth0` attached to our default network (flannel)
 * `net1` attached to our macvlan network we just created.
+
+```
+$ kubectl get pod multipod-1 -o yaml
+```
+
+you will see `k8s.v1.cni.cncf.io/networks-status`and ask the coordinator, what is for ?
+
+## Multus - mode 3
+
+### A7. Verify the interfaces available in the pod
+```
+
+```
 
 ## SR-IOV Network Device Plugin
 
@@ -261,18 +282,12 @@ Due to hardware/space/etc constraints in this tutorial setting -- we couldn't ha
   - The reason that you can't "just use a CNI plugin" is that, while it'll probably work for a one-off test in your lab -- in production, a CNI plugin alone doesn't have scheduler awareness. The device plugin gives you a way to tell the Kubernetes scheduler that there are resources available on a particular node.
 * [ehost-device CNI plugin](https://github.com/zshi-redhat/ehost-device-cni)
   - This is an enhanced version of the [host-device](https://github.com/containernetworking/plugins/tree/master/plugins/main/host-device) reference CNI plugin that allows for IPAM (IP Address Management) to be used as well.
-* Custom Kubernetes Build
-  - This currently requires a patch that's in progress for Kubernetes. 
-  - The cluster that you're currently using is based on a custom build of Kubernetes using this patch.
-  - The patch is avaible [on GitHub](https://github.com/kubernetes/kubernetes/compare/master...dashpole:device_id#diff-bf28da68f62a8df6e99e447c4351122).
 * Multus CNI
   - Multus is used here in order to have this pod both plumbed to the "default network", and to have the additional 
 
 ### B1. Create the CNI configuration for the ehost-device plugin
 
 Let's first create the CRD object for this, similarly to Multus.
-
-If you're root, exit from the root user. Move into the local clone, as non-root user.
 
 ```
 cd ~/virt-network-device-plugin/
