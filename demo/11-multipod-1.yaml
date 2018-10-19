@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multipod
+  annotations:
+    k8s.v1.cni.cncf.io/networks: macvlan-net-attachment
+spec:
+  containers:
+  - name: multipod
+    command: ["/bin/bash", "-c", "sleep 2000000000000"]
+    image: dougbtv/centos-network
