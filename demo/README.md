@@ -14,7 +14,7 @@ Agenda:
 
 All you need is an SSH client. Please feel free to use whatever you have. If you'd like, you can use a [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en).
 
-## Get your URLS
+## Get your workstation
 
 We will give each person will have a pamphlet.
 
