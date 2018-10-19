@@ -747,7 +747,7 @@ Well done! You have successfully verified userspace cni plugin using OVS-DPDK in
 
 ***Tutorial session end here***
 
-### VPP demo (Sorry, it is not included in this demo for this session)
+### VPP demo (Sorry, it is not included for this session)
 
 In this tutorial, we will create the following:
 
