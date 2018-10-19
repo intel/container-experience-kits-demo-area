@@ -16,11 +16,11 @@ All you need is an SSH client. Please feel free to use whatever you have. If you
 
 ## Get your workstation
 
-We will give each person will have a pamphlet.
+We will give each person a pamphlet. Please see the demo area information, if the information is not clear, please get
 
 |          Demo Area information          ||
 | ------------- |:-------------:|
-|       | 1 or 2              |
+| Allocated server pool no. | 1 or 2              |
 | VM IP address                 |   IPV4-ADDR      |
 
 please use the [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en) or any ssh client(putty) to `root@silpixa00388225.ir.intel.com` with coordinator instruction
