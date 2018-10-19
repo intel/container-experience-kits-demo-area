@@ -25,7 +25,7 @@ Table of Contents
       * [Userspace CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/userspace-cni#userspace-cni)
       * [SRIOV Network Device plugin(Emulated)](https://github.com/intel/container-experience-kits-demo-area/tree/master/workspace/sriov-network-dp#sr-iov-network-device-plugin)
         * [SRIOV CNI](https://github.com/intel/container-experience-kits-demo-area/tree/master/docs/nfv-features-in-k8s#sriov---cni-and-dpdk-sriov-cni)
-   * Kubernetes Compute(Will not be covered in the ONS Summit)
+   * Kubernetes Compute(Will not be covered in the session)
       * [CPU Manager for K8s](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/nfv-features-in-k8s/README.md#cmk)
       * [NUMA Manager](https://github.com/kubernetes/community/pull/1680)
       * [QAT](https://github.com/intel/intel-device-plugins-for-kubernetes/blob/master/cmd/qat_plugin/README.md#build-and-test-intel-quickassist-technology-qat-device-plugin-for-kubernetes)
