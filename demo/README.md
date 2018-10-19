@@ -1,6 +1,6 @@
 # Welcome to NFV Features in Kubernetes: A hands-on Tutorial!
 
-Thanks for joining us at ONS Europe 2018 to try out some NFV features in Kubernetes. 
+Thanks for joining us at Intel Hands on Training for Global Sales and Marketing(GSM) to try out some NFV features in Kubernetes. 
 
 Agenda:
 
@@ -16,27 +16,26 @@ All you need is an SSH client. Please feel free to use whatever you have. If you
 
 ## Get your URLS
 
-We will give each person a number.
+We will give each person will have a pamphlet.
 
-[Server A](https://markdownshare.com/view/40f13f03-1c5b-4a0a-8208-ac5f28ea0fd9)
-[Server B](https://markdownshare.com/view/c23a3180-3ec5-4972-9260-a5b290d1d1ab)
+|          Demo Area information          ||
+| ------------- |:-------------:|
+|       | 1 or 2              |
+| VM IP address                 |   IPV4-ADDR      |
 
-
+please use the [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en) or any ssh client(putty) to `root@silpixa00388225.ir.intel.com` with coordinator instruction
 
 ## Workstation setup
 
-Let's get setup to use our workstation! At each of your desks, you'll have a number. The speakers will provide you with a link to visit. Visit that link.
-
-Here you'll be presented with a table with a number, use the SSH connection string as provided and you'll wind up on the machine. Do you notice that there's 2 SSH links? One is a backup in case you type `exit` -- generally, don't type `exit`! If you do by accident (or, more likely, out of habit), you can use the second one. 
-
-First things first! Let's make a new tmux window.
+Let's get setup to use our workstation! At each of your pamphlet, you'll have pool number **1** or **2**. Now login into your workstation with following informatiom
 
 ```
-ctrl+b [release the keys, then hit] c
+[root@silpixa00388225 ~]#ssh-s<Allocated serverpool no.> centos@<VM IP address>
 ```
-
-This provides us a layer of redundancy in case someone types `exit`. Need more help with tmux? Try the [tmuxcheatsheet.com](https://tmuxcheatsheet.com/).
-
+eg:
+```
+[root@silpixa00388225 ~]#ssh-s3 centos@172.168.0.12
+```
 Now! Let's make sure that no one else is accidentally using our instance! We'll use the `wall` command to announce our name.
 
 ```
@@ -51,7 +50,7 @@ Now! Let's make sure you can access the kubernetes cluster, let's list the avail
 kubectl get nodes
 ```
 
-You should see the master and a node, and the `STATUS` should read `NotReady` -- this is where we want it, these nodes won't be ready until we install our pod-to-pod network. That's what's we're going to do next, let's roll!
+You should see the master and a node, and the `STATUS` should read `Ready`
 
 ## Multus CNI
 
@@ -64,55 +63,17 @@ You should see the master and a node, and the `STATUS` should read `NotReady` --
 
 ### A1. Inspecting the Multus daemonset-style installation
 
-Inspect your work area, firstly, list your home directory, You'll see there's a `./multus-cni`. Move into that directory
+Inspect your work area, firstly, list your home directory, You'll see there's a `./`. Move into that directory
 
 ```
 ls -l
-cd multus-cni
+cd container-experience-kits-demo-area/demo/
 ```
-
-Typically, by default we setup using the "quick start guide" method, which deploys a YAML file with a daemonset and some CRDs.
-
-Let's look at that file.
-
-```
-cat images/multus-daemonset.yml
-```
-
-Taking a look around, you'll see this is comprised of a few parts -- each between the `---` YAML delimiter.
-
-* A CRD (Custom Resource Definition)
-    - This defines how we'll extend the Kubernetes API with our custom configurations for how we'll setup each NIC attached to our pods.
-* A cluster role, cluster role binding and service account
-    - to give Multus permissions to access the Kubernetes API
-* A config map
-    - Currently unused, but to allow you to customize how Multus is configured
-* A Daemonset
-    - A way to define a pod that runs on each host in our cluster, in this case it is used to place our Multus binary and flat file configuration on each machine in the cluster.
-
 ### A2. Install Multus and the default network
-
-Let's take this for a spin -- we'll deploy both the Multus Daemonset, and Flannel, which will be used for our "default network" -- 
-
-```
-cat ./images/{multus-daemonset.yml,flannel-daemonset.yml} | kubectl apply -f -
-```
-
-This is going to spin up a number of pods, let's watch it come up...
-
-```
-kubectl get pods --all-namespaces -w
-```
-
-Or if you don't like that format, you can use `watch` itself...
-
-```
-watch -n1 kubectl get pods --all-namespaces -o wide
-```
 
 ### A3. Verify the installation of Multus & default network
 
-Next, we can check that state of our nodes, once everything is running we should see that `STATUS` changes from `NotReady` to `Ready` -- 
+Next, we can check that state of our nodes, once everything is running we should see that `STATUS` to `Ready` -- 
 
 ```
 kubectl get nodes
@@ -123,7 +84,7 @@ This state is determined by the Kubelet by looking for the precence of a CNI con
 Let's take a look there.
 
 ```
-cat /etc/cni/net.d/70-multus.conf
+cat /etc/cni/net.d/10-flannel.conf
 ```
 
 Looking at this configuration file, you'll see that there's a number of things configured here, for example:
@@ -165,35 +126,64 @@ Take a look at the output, you'll see two interfaces -- one doesn't count! The l
 
 ### A5. Create a new CNI configuration stored as a custom resource
 
+All master nodes are tainted with `NoSchedule`, it means, you can't schedule the pods on the master, for the our workstation. Let us remove for our convenience. 
+
+```
+$ kubectl get nodes
+NAME             STATUS    ROLES     AGE       VERSION
+kube-master-<#>   Ready     master    13h       v1.11.3
+kube-node-X     Ready     <none>    13h       v1.11.3
+
+kubectl taint node kube-master-<#> node-role.kubernetes.io/master:NoSchedule-
+```
+
+let us go deep drive on the Multus networking concepts.
+
+```
+sudo bash -c 'cat <<EOF > /etc/cni/net.d/10-flannel.conf
+{
+   "name":"defaultnetwork",
+   "type":"multus",
+   "kubeconfig": "/etc/kubernetes/kubelet.conf",
+   "LogLevel": "debug",
+   "LogFile": "/var/log/multus.log",
+   "delegates": [{"cniVersion": "0.3.0", "name":"defaultnetwork", "type": "flannel", "isDefaultGateway": true}],
+   "confDir": "/etc/cni/multus/net.d"
+}
+EOF'
+```
+
+Co-ordinator will explain the each field now here.
+
 Now, let's setup a custom network we'll attach as a second interface to a different pod.
 
 ```
-cat <<EOF | kubectl create -f -
+cat 00-mode2-net.yaml
 apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
-  name: macvlan-conf
-spec: 
+  name: virt-network
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: kernel.org/virt
+spec:
   config: '{
-      "cniVersion": "0.3.0",
-      "type": "macvlan",
-      "master": "eth0",
-      "mode": "bridge",
-      "ipam": {
-        "type": "host-local",
-        "subnet": "192.168.1.0/24",
-        "rangeStart": "192.168.1.200",
-        "rangeEnd": "192.168.1.216",
-        "routes": [
-          { "dst": "0.0.0.0/0" }
-        ],
-        "gateway": "192.168.1.1"
-      }
-    }'
-EOF
+        "type": "ehost-device",
+        "name": "virt-network",
+        "cniVersion": "0.3.0",
+        "ipam": {
+                "type": "host-local",
+                "subnet": "10.56.217.0/24",
+                "routes": [{
+                        "dst": "0.0.0.0/0"
+                }],
+                "gateway": "10.56.217.1"
+        }
+}'
+
+kubectl create -f 00-mode2-net.yaml
 ```
 
-What did we just do here? Remember how we looked at the `/etc/cni/net.d/70-multus.conf` -- that's a CNI configuration file. In that case we configured Multus itself. But, since Multus is a "meta plugin" and it calls other plugins, we're creating another different CNI plugin. In this case we created a configuration for using the `macvlan` plugin. 
+What did we just do here? Remember how we looked at the `/etc/cni/net.d/10-flannel.conf` -- that's a CNI configuration file. In that case we configured Multus itself. But, since Multus is a "meta plugin" and it calls other plugins, we're creating another different CNI plugin. In this case we created a configuration for using the `macvlan` plugin. 
 
 Where does this get stored? You can look for it using the command line (or the Kubernetes API, as well)
 
