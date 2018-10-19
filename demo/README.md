@@ -263,10 +263,73 @@ you will see `k8s.v1.cni.cncf.io/networks-status`and ask the coordinator, what i
 
 ## Multus - mode 3
 
-### A7. Verify the interfaces available in the pod
+### A7. ON-Disk network attachment definition support
+```
+$ sudo mkdir -p /etc/cni/multus/net.d; sudo bash -c 'cat <<EOF > /etc/cni/multus/net.d/10-ptp.conf
+{
+    "cniVersion": "0.3.0",
+    "name": "test-ptp-network",
+    "type": "ptp",
+    "ipam": {
+      "type": "host-local",
+      "subnet": "10.1.1.0/24"
+    },
+    "dns": {
+                "nameservers": [ "10.1.1.1", "8.8.8.8" ]
+    }
+}
+EOF'
 ```
 
+Coordinator explain regarding the mode 3 importance in Mutlus. Please notice that this `net-attach-def` is not having `config`
+
 ```
+$ cat 01-mode3-net.yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: test-ptp-network
+```
+let create this net-attach-def in our workstation.
+```
+$ kubectl create -f 01-mode3-net.yaml
+$ kubectl get net-attach-def test-ptp-network -o yaml
+```
+let launch a normal workload now,
+```
+$ cat 12-multipod-2.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multipod-2
+  annotations:
+    k8s.v1.cni.cncf.io/networks: test-ptp-network
+spec:
+  containers:
+  - name: multipod-2
+    command: ["/bin/bash", "-c", "sleep 2000000000000"]
+    image: dougbtv/centos-network
+  nodeSelector:
+    kubernetes.io/hostname: kube-master-<#>
+```
+
+Have you noticed that `nodeSelector` is having `kube-master-<#>`
+
+```
+$ kubectl get nodes
+NAME             STATUS    ROLES     AGE       VERSION
+kube-master-<#>   Ready     master    13h       v1.11.3
+kube-node-X     Ready     <none>    13h       v1.11.3
+```
+
+Open the 12-multipod-2.yaml with `vim` and edit the `kube-master-<#>`. For eg. `kube-master-29`, if your master number is `29`. And launch the workload now.
+
+```
+$ kubectl create -f 12-multipod-2.yaml
+$ kubectl exec -it multipod-2 -- ip -d a
+$ kubectl get pod multipod-2 -o yaml
+```
+let's have a break and if you have question. Please ask the co-ordinator.
 
 ## SR-IOV Network Device Plugin
 
@@ -290,20 +353,39 @@ Due to hardware/space/etc constraints in this tutorial setting -- we couldn't ha
 Let's first create the CRD object for this, similarly to Multus.
 
 ```
-cd ~/virt-network-device-plugin/
+$ cat 02-virt-net.yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: virt-network
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: kernel.org/virt
+spec:
+  config: '{
+        "type": "ehost-device",
+        "name": "virt-network",
+        "cniVersion": "0.3.0",
+        "ipam": {
+                "type": "host-local",
+                "subnet": "10.56.217.0/24",
+                "routes": [{
+                        "dst": "0.0.0.0/0"
+                }],
+                "gateway": "10.56.217.1"
+        }
+}'
 ```
 
 Create the CRD object.
 
 ```
-kubectl create -f deployments/virt-crd.yaml
+kubectl create -f 02-virt-net.yaml
 ```
 
 You can list it and describe it.
 
 ```
-kubectl get network-attachment-definitions.k8s.cni.cncf.io
-kubectl describe network-attachment-definitions.k8s.cni.cncf.io virt-net1
+kubectl describe net-attach-def virt-network
 ```
 
 Let's make it so we can run workloads on the master, here's where we'll run the virt-device-plugin itself.
@@ -312,8 +394,20 @@ Let's make it so we can run workloads on the master, here's where we'll run the 
 
 Now let's spin up the device plugin itself...
 
+Before that let's install `jq` package, since co-ordinator missed to include it in the golden images.
 ```
-curl https://gist.githubusercontent.com/dougbtv/8c63c9922e94178649306979ece58694/raw/b2dbbaaa99baeba25d88e4e0d8a8ea02ff1dad67/virtdp-daemonset.yaml | kubectl create -f -
+$ sudo /usr/bin/yum install epel-release -y; sudo /usr/bin/yum install jq -y
+```
+Now run the following command
+```
+$ kubectl get nodes -o json| jq .items[].status.capacity
+```
+Any idea on this ? co-ordinator should explain it now.
+
+Now let us understand the concept of daemonset in the Kubernetes
+```
+$ cat 21-virt-dp.yaml
+$ kubectl create -f 21-virt-dp.yaml
 ```
 
 Go ahead and list the pods on your cluster, we'll show which nodes they're running on...
@@ -329,13 +423,16 @@ Let's look at the logs of that pod on a node...
 ```
 kubectl logs $(kubectl get pods -o wide --all-namespaces | grep kube-virt-device-plugin | grep -i node | head -n1 | awk '{print $2}') --namespace=kube-system
 ```
+```
+kubectl logs $(kubectl get pods -o wide --all-namespaces | grep kube-virt-device-plugin | grep -i master | head -n1 | awk '{print $2}') --namespace=kube-system
+```
 
 ### B4. Creating a pod to use the device plugin
 
 Let's spin up a pod...
 
 ```
-cat <<EOF | kubectl create -f -
+$ cat 13-virtdevicepod-1.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -343,7 +440,7 @@ metadata:
   labels:
     env: test
   annotations:
-    k8s.v1.cni.cncf.io/networks: virt-net
+    k8s.v1.cni.cncf.io/networks: virt-network
 spec:
   containers:
   - name: appcntr1
@@ -358,7 +455,8 @@ spec:
       limits:
         memory: "128Mi"
         kernel.org/virt: '1'
-EOF
+
+$ kubectl create -f 13-virtdevicepod-1.yaml
 ```
 
 ### B5. Inspecting the results of the pod using the device
@@ -382,7 +480,7 @@ kubectl get pods -o wide
 And you can find out more about the resources used with:
 
 ```
-kubectl describe node $HOSTNAME | less
+kubectl logs $(kubectl get pods -o wide --all-namespaces | grep kube-virt-device-plugin | grep -i master | head -n1 | awk '{print $2}') --namespace=kube-system
 ```
 
 ### B7. Create a pod that doesn't have a way to get scheduled.
@@ -390,7 +488,7 @@ kubectl describe node $HOSTNAME | less
 If you create a secondary pod, you can also see that it won't get assigned, and will remain in a pending status:
 
 ```
-cat <<EOF | kubectl create -f -
+$ cat 14-virtdevicepod-2.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -398,10 +496,10 @@ metadata:
   labels:
     env: test
   annotations:
-    k8s.v1.cni.cncf.io/networks: virt-net
+    k8s.v1.cni.cncf.io/networks: virt-network
 spec:
   containers:
-  - name: appcntr1
+  - name: appcntr2
     image: dougbtv/centos-network
     imagePullPolicy: IfNotPresent
     command: [ "/bin/bash", "-c", "--" ]
@@ -413,7 +511,14 @@ spec:
       limits:
         memory: "128Mi"
         kernel.org/virt: '1'
-EOF
+        
+$ kubectl create -f 14-virtdevicepod-2.yaml
+```
+Can anyone explain it ?
+
+Answer is here:
+```
+kubectl describe pod virtdevicepod2
 ```
 
 ## Userspace CNI
@@ -435,7 +540,214 @@ The Userspace CNI supports both OVS-DPDK (http://www.openvswitch.org/) and VPP (
     - memif is a protocol similiar to vhost-user, a packet based shared memory interface for userspace processes. Where vhost-user was designed for packet processing between host and virtual machines, with host to guest memory pointer mapping. memif was not and skips this step. This and other optimizations makes memif faster than vhost-user for host to container or container to container packet processing.
     - In userspace networking, a memif interface is created in two userspace processes (between host and vm, between host and container, between two different containers), a unix socket file is shared between them that is used to handshake on the descriptor rings and packet buffers back by shared memory.
 
-### VPP demo
+### OVS-DPDK demo
+
+let's make sure that we enable the openvswitch service, before jumping into the demo:
+```
+$ sudo /usr/local/share/openvswitch/scripts/ovs-ctl --no-ovs-vswitchd start 
+$ sudo /usr/local/share/openvswitch/scripts/ovs-ctl --no-ovsdb-server --db-sock="/usr/local/var/run/openvswitch/db.sock" restart
+```
+let's check the Openvswitch is enabled. User should see the `br0`
+
+```
+$ sudo /usr/local/bin/ovs-vsctl show
+8fa38fde-5a5f-4f0a-93d3-b6b7efe74a36
+    Bridge "br0"
+        Port "br0"
+            Interface "br0"
+                type: internal
+    ovs_version: "2.10.0
+```
+
+In this tutorial we will create a new pod with two virtio_user interafaces and we will transmit some traffic between them.
+
+### D1. Network attachment definition
+
+Your kubernetes cluster has some multus network attachment definitions created from previous tutorials:
+```
+[centos@kube-master-1 ~]$ kubectl get net-attach-def
+NAME            AGE
+flannel-conf    17h
+macvlan-conf    17h
+.....
+```
+
+We will now add new definition for `userspace-ovs` - skip it if it's already created:
+```
+$ cat 03-ovs-net.yaml
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: userspace-ovs
+spec:
+  config: '{
+    "cniVersion": "0.3.0",
+    "type": "userspace",
+    "LogLevel": "debug",
+    "LogFile": "/var/log/userspace.log",
+    "host": {
+      "engine": "ovs-dpdk",
+      "iftype": "vhostuser"
+    }
+  }'
+```
+
+Yes, this is the same multus configuration syntax we used in previous tutorials.
+
+What changed is `engine: ovs-dpdk` and `iftype: vhostuser` - let's add it now:
+
+### D2. Dockerfile
+
+Before we will create our pod we need to provide a docker container image with DPDK installed - let's build it now:
+```
+$ cd ~/container-experience-kits-demo-area/demo/ovs-images/
+$ cat Dockerfile
+FROM ubuntu:bionic
+RUN apt-get update && apt-get install -y dpdk;
+WORKDIR /home
+COPY get-prefix.sh /home
+RUN chmod +x /home/get-prefix.sh
+ENTRYPOINT ["bash"]
+
+```
+can some explain this Dockerfile ?
+
+Let us build the DPDK docker image now, Any one can explain, why all these parameter? what is standard way to build a local docker image?
+```
+sudo docker build --build-arg http_proxy=${http_proxy} \
+             --build-arg HTTP_PROXY=${HTTP_PROXY} \
+             --build-arg https_proxy=${https_proxy} \
+             --build-arg HTTPS_PROXY=${HTTPS_PROXY} \
+             --build-arg no_proxy=${no_proxy} \
+             --build-arg NO_PROXY=${NO_PROXY} \
+              -t ubuntu-dpdk --network host .
+```
+### D3. Pod
+
+We are now ready to create our pod with two userspace interfaces - let's create below specification:
+
+```
+$ cat 15-ovs-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-vhost-example
+  annotations:
+    k8s.v1.cni.cncf.io/networks: userspace-ovs, userspace-ovs
+spec:
+  containers:
+  - name: multi-vhost-example
+    image: ubuntu-dpdk
+    imagePullPolicy: IfNotPresent
+    securityContext:
+      privileged: true
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /vhu/
+      name: socket
+    - mountPath: /dev/hugepages
+      name: hugepage
+    resources:
+      requests:
+        memory: 1Gi
+      limits:
+        hugepages-1Gi: 1Gi
+    command: ["sleep", "infinity"]
+  volumes:
+  - name: socket
+    hostPath:
+      path: /var/lib/cni/vhostuser/
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
+  securityContext:
+    runAsUser: 0
+  restartPolicy: Never
+  nodeSelector:
+    kubernetes.io/hostname: kube-master-<#>
+```
+Again spotted the `kube-master-<#>`, what we will do now ?
+
+please edit the `15-ovs-pod.yaml` file with your master number.
+
+As you can see, we use annotations to assign two userspace interfaces.
+
+We also use kubernetes native hugepages to provide two of them for our pod.
+
+Let's create it now: 
+```
+kubectl create -f 15-ovs-pod.yaml
+```
+
+### D4. Verify Openvswitch
+
+You should see new vhostuser ports added in OVS bridge now:
+```
+[centos@kube-master-1 ~]$ sudo /usr/local/bin/ovs-vsctl show
+    Bridge "br0"
+        Port "1f8b7066a427-net2"
+            Interface "1f8b7066a427-net2"
+                type: dpdkvhostuser
+        Port "br0"
+            Interface "br0"
+                type: internal
+        Port "1f8b7066a427-net1"
+            Interface "1f8b7066a427-net1"
+                type: dpdkvhostuser
+    ovs_version: "2.10.0"
+```
+
+### D5. Launch testpmd
+
+We will now jump inside the pod and transmit some traffic using DPDK testing tool `testpmd`:
+```
+[centos@kube-master-1 ~]$ kubectl exec -it multi-vhost-example bash
+root@multi-vhost-example:/home# export ID=$(/home/get-prefix.sh)
+root@multi-vhost-example:/home# testpmd \
+    -d librte_pmd_virtio.so.17.11 \
+    -l 2,3 \
+    --file-prefix=testpmd_ \
+    --vdev=net_virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 \
+    --vdev=net_virtio_user1,path=/vhu/${ID}/${ID:0:12}-net2 \
+    --no-pci \
+    -- \
+    --no-lsc-interrupt \
+    --auto-start \
+    --tx-first \
+    --stats-period 1 \
+    --disable-hw-vlan;
+
+```
+Depending on server's performance below testpmd results can vary:
+```
+Port statistics ====================================
+  ######################## NIC statistics for port 0  ########################
+  RX-packets: 8308640    RX-missed: 0          RX-bytes:  531752960
+  RX-errors: 0
+  RX-nombuf:  0
+  TX-packets: 8276896    TX-errors: 0          TX-bytes:  529721344
+ 
+  Throughput (since last show)
+  Rx-pps:      2126428
+  Tx-pps:      2123518
+  ############################################################################
+ 
+  ######################## NIC statistics for port 1  ########################
+  RX-packets: 8276896    RX-missed: 0          RX-bytes:  529721344
+  RX-errors: 0
+  RX-nombuf:  0
+  TX-packets: 8308672    TX-errors: 0          TX-bytes:  531755008
+ 
+  Throughput (since last show)
+  Rx-pps:      2123552
+  Tx-pps:      2126429
+  ############################################################################
+```
+Well done! You have successfully verified userspace cni plugin using OVS-DPDK interfaces.
+
+***Tutorial session end here***
+
+### VPP demo (Sorry, it is not included in this demo for this session)
 
 In this tutorial, we will create the following:
 
@@ -573,180 +885,6 @@ On the host, if we show the interfaces again, we see tx and rx counts have incre
 ```
 vppctl show interface
 ```
-
-### OVS-DPDK demo
-
-In this tutorial we will create a new pod with two virtio_user interafaces and we will transmit some traffic between them.
-
-### D1. Network attachment definition
-
-Your kubernetes cluster has some multus network attachment definitions created from previous tutorials:
-```
-[centos@kube-master-1 ~]$ kubectl get net-attach-def
-NAME            AGE
-flannel-conf    17h
-macvlan-conf    17h
-virt-net1       16h
-```
-
-We will now add new definition for `userspace-ovs` - skip it if it's already created:
-```
-[centos@kube-master-1 ~]$ vi userspace-net-ovs-no-ipam.yaml
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: userspace-ovs
-spec:
-  config: '{
-    "cniVersion": "0.3.0",
-    "type": "userspace",
-    "LogLevel": "debug",
-    "LogFile": "/var/log/userspace.log",
-    "host": {
-      "engine": "ovs-dpdk",
-      "iftype": "vhostuser"
-    }
-  }'
-```
-
-Yes, this is the same multus configuration syntax we used in previous tutorials.
-
-What changed is `engine: ovs-dpdk` and `iftype: vhostuser` - let's add it now:
-
-```
-[centos@kube-master-1 ~]$ kubectl create -f userspace-net-ovs-no-ipam.yaml
-[centos@kube-master-1 ~]$ kubectl get net-attach-def
-NAME            AGE
-flannel-conf    17h
-macvlan-conf    17h
-virt-net1       16h
-userspace-ovs   20s
-```
-
-### D2. Dockerfile
-
-Before we will create our pod we need to provide a docker container image with DPDK installed - let's build it now:
-```
-[centos@kube-master-1 ~]$ vi Dockerfile
-FROM ubuntu:bionic
-RUN apt-get update && apt-get install -y dpdk;
-ENTRYPOINT ["bash"]
-
-[centos@kube-master-1 ~]$ docker build -t ubuntu-dpdk --network host .
-```
-### D3. Pod
-
-We are now ready to create our pod with two userspace interfaces - let's create below specification:
-
-```
-apiVersion: v1
-kind: Pod
-metadata:
-  name: multi-vhost-example
-  annotations:
-    k8s.v1.cni.cncf.io/networks: userspace-ovs, userspace-ovs
-spec:
-  containers:
-  - name: multi-vhost-example
-    image: ubuntu-dpdk
-    imagePullPolicy: IfNotPresent
-    securityContext:
-      privileged: true
-      runAsUser: 0
-    volumeMounts:
-    - mountPath: /vhu/
-      name: socket
-    - mountPath: /dev/hugepages
-      name: hugepage
-    resources:
-      requests:
-        memory: 2Gi
-      limits:
-        hugepages-1Gi: 2Gi
-    command: ["sleep", "infinity"]
-  volumes:
-  - name: socket
-    hostPath:
-      path: /var/lib/cni/vhostuser/
-  - name: hugepage
-    emptyDir:
-      medium: HugePages
-  securityContext:
-    runAsUser: 0
-  restartPolicy: Never
-```
-
-As you can see, we use annotations to assign two userspace interfaces.
-
-We also use kubernetes native hugepages to provide two of them for our pod.
-
-Let's create it now: `kubectl create -f pod-multi-vhost.yaml`
-
-### D4. Verify Openvswitch
-
-You should see new vhostuser ports added in OVS bridge now:
-```
-[centos@kube-master-1 ~]$ ovs-vsctl show
-    Bridge "br0"
-        Port "1f8b7066a427-net2"
-            Interface "1f8b7066a427-net2"
-                type: dpdkvhostuser
-        Port "br0"
-            Interface "br0"
-                type: internal
-        Port "1f8b7066a427-net1"
-            Interface "1f8b7066a427-net1"
-                type: dpdkvhostuser
-    ovs_version: "2.10.0"
-```
-
-### D5. Launch testpmd
-
-We will now jump inside the pod and transmit some traffic using DPDK testing tool `testpmd`:
-```
-[centos@kube-master-1 ~]$ kubectl exec -it multi-vhost-example bash
-
-[root@multi-vhost-example /]# export ID=$(/vhu/get-prefix.sh)
-[root@multi-vhost-example /]# testpmd \
-    -d librte_pmd_virtio.so.17.11 \
-    -l 2,3 \
-    --file-prefix=testpmd_ \
-    --vdev=net_virtio_user0,path=/vhu/${ID}/${ID:0:12}-net1 \
-    --vdev=net_virtio_user1,path=/vhu/${ID}/${ID:0:12}-net2 \
-    --no-pci \
-    -- \
-    --no-lsc-interrupt \
-    --auto-start \
-    --tx-first \
-    --stats-period 1 \
-    --disable-hw-vlan;
-```
-Depending on server's performance below testpmd results can vary:
-```
-Port statistics ====================================
-  ######################## NIC statistics for port 0  ########################
-  RX-packets: 8308640    RX-missed: 0          RX-bytes:  531752960
-  RX-errors: 0
-  RX-nombuf:  0
-  TX-packets: 8276896    TX-errors: 0          TX-bytes:  529721344
- 
-  Throughput (since last show)
-  Rx-pps:      2126428
-  Tx-pps:      2123518
-  ############################################################################
- 
-  ######################## NIC statistics for port 1  ########################
-  RX-packets: 8276896    RX-missed: 0          RX-bytes:  529721344
-  RX-errors: 0
-  RX-nombuf:  0
-  TX-packets: 8308672    TX-errors: 0          TX-bytes:  531755008
- 
-  Throughput (since last show)
-  Rx-pps:      2123552
-  Tx-pps:      2126429
-  ############################################################################
-```
-Well done! You have successfully verified userspace cni plugin using OVS-DPDK interfaces.
 
 ## Do it yourself!
 
