@@ -1,6 +1,6 @@
 # Welcome to NFV Features in Kubernetes: A hands-on Tutorial!
 
-Thanks for joining us at Intel Hands on Training for Global Sales and Marketing(GSM) to try out some NFV features in Kubernetes. 
+Thanks for joining us at Intel Hands on Training for Global Sales and Marketing(GSM) to try out some NFV features in Kubernetes. All details are in the slide deck - [link](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/slide-deck/NFV%20Features%20in%20Kubernetes.pdf) 
 
 Agenda:
 
