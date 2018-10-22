@@ -1,6 +1,6 @@
 # Introduction
 
-This tutorial will be a demo for a number of technologies for enabling NFV features in Kubernetes. All the details are in the slide deck - [link](https://github.com/intel/container-experience-kits-demo-area/blob/master/docs/slide-deck/NFV%20Features%20in%20Kubernetes.pdf) 
+This tutorial will be a demo for a number of technologies for enabling NFV features in Kubernetes. 
 
 For all requirements for the hands-on session checks the table of contents below. The audience will be provided with a SSH connection to work on the virutal env. Please check with the lab co-ordinators during the session for the assistances.
 
