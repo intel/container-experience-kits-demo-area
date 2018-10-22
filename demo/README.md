@@ -16,33 +16,36 @@ All you need is an SSH client. Please feel free to use whatever you have. If you
 
 ## Get your workstation
 
-We will give each person a pamphlet. Please see the demo area information, if the information is not clear, please get
+We will give each person a pamphlet. Please see the demo area information, if the information is not clear, please get the co-ordinator assistances.
+
 
 |          Demo Area information          ||
 | ------------- |:-------------:|
 | Allocated server pool no. | 1 or 2              |
 | VM IP address                 |   IPV4-ADDR      |
 
-please use the [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en) or any ssh client(putty) to `root@silpixa00388225.ir.intel.com` with coordinator instruction
+Please use the [Chrome Extension for SSH](https://chrome.google.com/webstore/detail/secure-shell-app/pnhechapfaindjhompbnflcldabbghjo?hl=en) or any ssh client(eg. putty) to login as `gsm-user@silpixa00388225.ir.intel.com` with coordinator password instruction
 
 ## Workstation setup
 
-Let's get setup to use our workstation! At each of your pamphlet, you'll have pool number **1** or **2**. Now login into your workstation with following informatiom
+Let's get setup to use our workstation! At each of your pamphlet, you'll have pool number **1** or **2**/**2.1**. Now login into your workstation with following informatiom
 
 ```
-[root@silpixa00388225 ~]#ssh-s<Allocated serverpool no.> centos@<VM IP address>
+[gsm-user@silpixa00388225 ~]#ssh-s<Allocated serverpool no.> centos@<VM IP address>
 ```
 eg:
 ```
-[root@silpixa00388225 ~]#ssh-s3 centos@172.168.0.12
+[gsm-user@silpixa00388225 ~]#ssh-s3 centos@172.168.0.12
 ```
+_if you can't login in the VM, please ask the coordinator help._
+
 Now! Let's make sure that no one else is accidentally using our instance! We'll use the `wall` command to announce our name.
 
 ```
 wall Hello this is My Name
 ```
 
-Make sure to type your own name. If you see someone else's name appear -- let's figure out who used the wrong link.
+Make sure to type your own name. If you see someone else's name appear -- let's figure out who used the wrong VM IP address.
 
 Now! Let's make sure you can access the kubernetes cluster, let's list the available nodes...
 
@@ -69,9 +72,7 @@ Inspect your work area, firstly, list your home directory, You'll see there's a 
 ls -l
 cd container-experience-kits-demo-area/demo/
 ```
-### A2. Install Multus and the default network
-
-### A3. Verify the installation of Multus & default network
+### A2. Verify the installation of Multus & default network
 
 Next, we can check that state of our nodes, once everything is running we should see that `STATUS` to `Ready` -- 
 
@@ -92,7 +93,8 @@ Looking at this configuration file, you'll see that there's a number of things c
 * `delegates`: This defines our default network, in this case we "delegate" the work for the default network to Flannel, which we use in this scenario as a pod-to-pod network.
 * `type`: This is a required CNI configuration field, and in each place that you see `type` that means that CNI is going to call the binary (by default in `/opt/cni/bin`) of the value of `type`, in this case the top level `type` is set to `multus` which is what we want to be called first -- then in the `delegates` section we have it the `type` set to `flannel`, in this case Multus is what calls this binary, and it will be the first binary called and always attached @ `eth0`.
 
-### A4. Run a pod without additional interfaces
+## Multus - mode 1
+### A3. Run a pod without additional interfaces
 
 Let's start a "vanilla" pod, this is kind of the control in our experiment here.
 
@@ -126,9 +128,9 @@ Take a look at the output, you'll see two interfaces -- one doesn't count! The l
 
 ## Multus - mode 2 
 
-### A5. Create a new CNI configuration stored as a custom resource
+### A4. Create a new CNI configuration stored as a custom resource
 
-All master nodes are tainted with `NoSchedule`, it means, you can't schedule the pods on the master, for the our workstation. Let us remove for our convenience. 
+All master nodes are tainted with `NoSchedule`, it means, you can't schedule the pods on the master, for the our workstation. Let us remove if for our convenience in this session. 
 
 ```
 $ kubectl get nodes
@@ -155,7 +157,7 @@ sudo bash -c 'cat <<EOF > /etc/cni/net.d/10-flannel.conf
 EOF'
 ```
 
-Co-ordinator will explain the each field now here.
+Co-ordinator will explain the each of the field on it.
 
 Now, let's setup a custom network we'll attach as a second interface to a different pod.
 
@@ -215,7 +217,7 @@ Here we can see that `macvlan-net-attachment` has been created. That's the name 
 
 We can implement an attachment to this `macvlan-net-attachment` configured network by referencing that name in an annotation in another pod. Let's create it. Take a look closely here and see that there is an `annotations` section -- in this case we call out the namespace under which it lives, and then the value of the name of the custom resource we just created, which reads as: `k8s.v1.cni.cncf.io/networks: macvlan-net-attachment`
 
-### A6. Create a pod with an additional interface
+### A5. Create a pod with an additional interface
 
 Let's move forward and create that pod:
 
@@ -241,7 +243,7 @@ Watch the pod come up again...
 $ kubectl get pods -w
 ```
 
-### A7. Verify the interfaces available in the pod
+### A6. Verify the interfaces available in the pod
 
 And when it comes up, now we can take a look at the interfaces that were created and attached to that pod:
 
