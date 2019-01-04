@@ -248,7 +248,7 @@ $ kubectl get pods -w
 And when it comes up, now we can take a look at the interfaces that were created and attached to that pod:
 
 ```
-$ kubectl exec -it multipod -- ip -d a
+$ kubectl exec -it multipod-1 -- ip -d a
 ```
 
 Now we can see that there are three interfaces!
