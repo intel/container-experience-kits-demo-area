@@ -324,7 +324,13 @@ kube-master-<#>   Ready     master    13h       v1.11.3
 kube-node-X     Ready     <none>    13h       v1.11.3
 ```
 
-Open the 12-multipod-2.yaml with `vim` and edit the `kube-master-<#>`. For eg. `kube-master-29`, if your master number is `29`. And launch the workload now.
+Open the 12-multipod-2.yaml with `vim` and edit the `kube-master-<#>`.
+
+```
+$ sudo vim 12-multipod-2.yaml
+```
+
+For eg. `kube-master-29`, if your master number is `29`. And launch the workload now.
 
 ```
 $ kubectl create -f 12-multipod-2.yaml
