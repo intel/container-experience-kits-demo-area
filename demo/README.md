@@ -55,6 +55,195 @@ kubectl get nodes
 
 You should see the master and a node, and the `STATUS` should read `Ready`
 
+## Basics
+
+BS.01 - Test that your installation works by running the simple Docker image, hello-world:
+```
+$ sudo docker run hello-world
+
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+ca4f61b1923c: Pull complete
+Digest: sha256:ca0eeb6fb05351dfc8759c20733c91def84cb8007aa89a5bf606bc8b315b9fc7
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+...
+```
+BS.02 - List the hello-world image that was downloaded to your machine:
+```
+$ sudo docker image ls
+```
+BS.03 - List the hello-world container (spawned by the image) which exits after displaying its message. If it were still running, you would not need the --all option:
+```
+$ sudo docker container ls --all
+
+CONTAINER ID     IMAGE           COMMAND      CREATED            STATUS
+54f4984ed6a8     hello-world     "/hello"     20 seconds ago     Exited (0) 19 seconds ago
+```
+BS.04 - let's run a [busybox image](https://hub.docker.com/_/busybox/) from the docker hub
+
+```
+$ sudo docker run -it busybox sh
+Unable to find image 'busybox:latest' locally
+latest: Pulling from library/busybox
+57c14dd66db0: Pull complete 
+Digest: sha256:7964ad52e396a6e045c39b5a44438424ac52e12e4d5a25d94895f2058cb863a0
+Status: Downloaded newer image for busybox:latest
+/ #
+```
+BS.05 - Now run the same command in Kubernetes
+```
+$ kubectl run -it --rm --restart=Never busybox --image=busybox sh
+If you don't see a command prompt, try pressing enter.
+/ #
+```
+BS.06 - All master nodes are tainted with `NoSchedule`, it means, you can't schedule the pods on the master, for the our workstation. Let us remove if for our convenience in this session. 
+
+```
+$ kubectl get nodes
+NAME             STATUS    ROLES     AGE       VERSION
+kube-master-<#>   Ready     master    13h       v1.11.3
+kube-node-X     Ready     <none>    13h       v1.11.3
+
+kubectl taint node kube-master-<#> node-role.kubernetes.io/master:NoSchedule-
+```
+BS.07 - let deploy google hostname image as a [deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) in Kubernetes with 4 replica
+```
+$ cat <<EOF | kubectl create -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostnames
+spec:
+  selector:
+    matchLabels:
+      app: hostnames
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        app: hostnames
+    spec:
+      containers:
+      - name: hostnames
+        image: k8s.gcr.io/serve_hostname
+        ports:
+        - containerPort: 9376
+          protocol: TCP
+EOF
+```
+BS.08 - Confirm your 4 pods are running
+```
+$  kubectl get pods -l app=hostnames -o wide
+NAME                        READY     STATUS    RESTARTS   AGE       IP            NODE
+hostnames-674b556c4-5v6hg   1/1       Running   0          2m        10.244.0.6    kube-master-19
+hostnames-674b556c4-jjgbg   1/1       Running   0          2m        10.244.1.9    kube-node-20
+hostnames-674b556c4-qzgfx   1/1       Running   0          2m        10.244.1.8    kube-node-20
+hostnames-674b556c4-z5gz8   1/1       Running   0          2m        10.244.1.10   kube-node-20
+```
+BS.09 - Now let see whether we can get the hostname from the client pod
+```
+$ kubectl run -it --rm --restart=Never busybox --image=busybox sh
+```
+Inside the pod
+```
+$ kubectl run -it --rm --restart=Never busybox --image=busybox sh
+If you don't see a command prompt, try pressing enter.
+/ # wget -qO- hostnames
+wget: bad address 'hostnames'
+```
+BS.10 - Something is not working!! deployment is not exposed as as hostnames service. Let's us enable the services for it
+```
+$ cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: hostnames
+spec:
+  selector:
+    app: hostnames
+  ports:
+  - name: default
+    protocol: TCP
+    port: 80
+    targetPort: 9376
+EOF
+```
+BS.11 - hmm, what are services ?
+```
+$ kubectl get svc -o wide
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE       SELECTOR
+hostnames    ClusterIP   10.108.62.79   <none>        80/TCP    1m        app=hostnames
+kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP   20h       <none>
+```
+BS.12 - Now run the previous client pod command again, and you get different results
+```
+$ kubectl run -it --rm --restart=Never busybox --image=busybox sh
+If you don't see a command prompt, try pressing enter.
+/ # wget -qO- hostnames
+hostnames-674b556c4-jjgbg
+/ # wget -qO- hostnames
+hostnames-674b556c4-5v6hg
+/ # wget -qO- hostnames
+hostnames-674b556c4-5v6hg
+/ # wget -qO- hostnames
+hostnames-674b556c4-5v6hg
+/ # wget -qO- hostnames
+hostnames-674b556c4-z5gz8
+```
+BS.13 - let debug more in the client pod and exit
+```
+/ # cat /etc/resolv.conf
+nameserver 10.96.0.10
+search default.svc.cluster.local svc.cluster.local cluster.local localhost
+options ndots:5
+/ # exit
+
+```
+BS.14 - What you see outside in a node?
+```
+$ kubectl get svc -n kube-system
+NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)         AGE
+kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP   21h
+```
+BS.15 - Concept is simply DNS here!!
+Next move to the concept of endpoints
+```
+$ kubectl describe svc hostnames 
+Name:              hostnames
+Namespace:         default
+Labels:            <none>
+Annotations:       <none>
+Selector:          app=hostnames
+Type:              ClusterIP
+IP:                10.108.62.79
+Port:              default  80/TCP
+TargetPort:        9376/TCP
+Endpoints:         10.244.0.6:9376,10.244.1.10:9376,10.244.1.8:9376 + 1 more...
+Session Affinity:  None
+Events:            <none>
+```
+BS.16 - Most powerful concept is kube-proxy!! simply play with ip-tables
+```
+$ sudo iptables-save | grep hostnames
+-A KUBE-SEP-2N4TWC53YU5D2546 -s 10.244.0.6/32 -m comment --comment "default/hostnames:default" -j KUBE-MARK-MASQ
+-A KUBE-SEP-2N4TWC53YU5D2546 -p tcp -m comment --comment "default/hostnames:default" -m tcp -j DNAT --to-destination 10.244.0.6:9376
+-A KUBE-SEP-N6BO7JPFL3IPM3GK -s 10.244.1.10/32 -m comment --comment "default/hostnames:default" -j KUBE-MARK-MASQ
+-A KUBE-SEP-N6BO7JPFL3IPM3GK -p tcp -m comment --comment "default/hostnames:default" -m tcp -j DNAT --to-destination 10.244.1.10:9376
+-A KUBE-SEP-XBIWV66JPBUXLYCY -s 10.244.1.8/32 -m comment --comment "default/hostnames:default" -j KUBE-MARK-MASQ
+-A KUBE-SEP-XBIWV66JPBUXLYCY -p tcp -m comment --comment "default/hostnames:default" -m tcp -j DNAT --to-destination 10.244.1.8:9376
+-A KUBE-SEP-ZDT36JFL743NS3VU -s 10.244.1.9/32 -m comment --comment "default/hostnames:default" -j KUBE-MARK-MASQ
+-A KUBE-SEP-ZDT36JFL743NS3VU -p tcp -m comment --comment "default/hostnames:default" -m tcp -j DNAT --to-destination 10.244.1.9:9376
+-A KUBE-SERVICES ! -s 10.244.0.0/16 -d 10.108.62.79/32 -p tcp -m comment --comment "default/hostnames:default cluster IP" -m tcp --dport 80 -j KUBE-MARK-MASQ
+-A KUBE-SERVICES -d 10.108.62.79/32 -p tcp -m comment --comment "default/hostnames:default cluster IP" -m tcp --dport 80 -j KUBE-SVC-ODX2UBAZM7RQWOIU
+-A KUBE-SVC-ODX2UBAZM7RQWOIU -m comment --comment "default/hostnames:default" -m statistic --mode random --probability 0.25000000000 -j KUBE-SEP-2N4TWC53YU5D2546
+-A KUBE-SVC-ODX2UBAZM7RQWOIU -m comment --comment "default/hostnames:default" -m statistic --mode random --probability 0.33332999982 -j KUBE-SEP-N6BO7JPFL3IPM3GK
+-A KUBE-SVC-ODX2UBAZM7RQWOIU -m comment --comment "default/hostnames:default" -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-XBIWV66JPBUXLYCY
+-A KUBE-SVC-ODX2UBAZM7RQWOIU -m comment --comment "default/hostnames:default" -j KUBE-SEP-ZDT36JFL743NS3VU
+```
+
 ## Multus CNI
 
 ### Core Concepts
