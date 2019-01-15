@@ -24,7 +24,7 @@ spec:
   - operator: "Exists"
   containers:
   - args:
-    - "/opt/bin/cmk isolate --conf-dir=/etc/cmk --pool=dataplane 'stress-ng --matrix 0 --matrix-size 512'"
+    - "/opt/bin/cmk isolate --conf-dir=/etc/cmk --pool=exclusive 'stress-ng --matrix 0 --matrix-size 512'"
     command:
     - "/bin/bash"
     - "-c"
@@ -34,9 +34,6 @@ spec:
     image: stress-ng 
     imagePullPolicy: IfNotPresent
     name: cmk-isolate-dp
-    resources:
-      requests:
-        cmk.intel.com/dp-cores: '1'
     volumeMounts:
     - mountPath: "/host/proc"
       name: host-proc
