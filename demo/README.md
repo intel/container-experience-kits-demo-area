@@ -472,7 +472,7 @@ $ sudo mkdir -p /etc/cni/multus/net.d; sudo bash -c 'cat <<EOF > /etc/cni/multus
 EOF'
 ```
 
-Coordinator explain regarding the mode 3 importance in Mutlus. Please notice that this `net-attach-def` is not having `config`
+Coordinator explain regarding the mode 3 importance in Multus. Please notice that this `net-attach-def` is not having `config`
 
 ```
 $ cat 01-mode3-net.yaml
